@@ -7,6 +7,7 @@ const withTM = require('next-transpile-modules')(d3packages)
 
 module.exports = withPlugins([withTM], {
   distDir: 'build',
+  generateBuildId: async () => 'org-roam-ui-build',
   images: {
     domains: ['localhost'],
     loader: 'custom',
