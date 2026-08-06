@@ -195,7 +195,12 @@ export const defaultNoteStyle = {
   },
   'th, td': {
     border: '1px solid',
-    borderColor: 'gray.300',
+    // gray.N maps to the active theme's baseN (N/100-1), which runs from
+    // near-background (low) to near-foreground (high) — not light-to-dark.
+    // gray.300 (base2) sits near the background end, so on dark themes it's
+    // close to black. gray.500 (base4) is the ramp midpoint, giving a
+    // consistent subtle divider on both light and dark themes.
+    borderColor: 'gray.500',
     padding: '4px 8px',
     // uniorg-rehype emits plain <th>/<td> with no per-column alignment
     // class, so the only alignment that matters is the UA stylesheet
