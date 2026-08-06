@@ -189,6 +189,18 @@ export const defaultNoteStyle = {
   },
   'caption.t-above': { captionSide: 'top' },
   'caption.t-bottom': { captionSide: 'bottom' },
+  table: {
+    borderCollapse: 'collapse',
+    margin: '1em 0',
+  },
+  'th, td': {
+    border: '1px solid',
+    borderColor: 'gray.300',
+    padding: '4px 8px',
+  },
+  th: {
+    fontWeight: 'bold',
+  },
   'th.org-right': { textAlign: 'center' },
   'th.org-left': { textAlign: 'center' },
   'th.org-center': { textAlign: 'center' },
