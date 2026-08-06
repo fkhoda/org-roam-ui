@@ -197,6 +197,11 @@ export const defaultNoteStyle = {
     border: '1px solid',
     borderColor: 'gray.300',
     padding: '4px 8px',
+    // uniorg-rehype emits plain <th>/<td> with no per-column alignment
+    // class, so the only alignment that matters is the UA stylesheet
+    // default — which centers <th> but left-aligns <td>. Match them so
+    // headers line up with their column's cells.
+    textAlign: 'left',
   },
   th: {
     fontWeight: 'bold',
