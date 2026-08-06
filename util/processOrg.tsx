@@ -5,6 +5,8 @@ import uniorg2rehype from 'uniorg-rehype'
 import uniorgSlug from 'uniorg-slug'
 import extractKeywords from 'uniorg-extract-keywords'
 import attachments from 'uniorg-attach'
+import visit from 'unist-util-visit'
+import orgToString from 'orgast-util-to-string'
 // rehypeHighlight does not have any types
 // add error thing here
 // import highlight from 'rehype-highlight'
@@ -37,6 +39,24 @@ import { OrgRoamLink, OrgRoamNode } from '../api'
 import { toString } from 'hast-util-to-string'
 import { Box, chakra } from '@chakra-ui/react'
 import { normalizeLinkEnds } from './normalizeLinkEnds'
+
+// uniorg-parse always turns `foo_bar` / `foo^bar` into subscript/superscript
+// nodes, matching org's `^:t` export default. That mangles literal
+// underscores in IDs, CONSTANT_NAMES, etc. Only treat it as sub/superscript
+// when explicitly braced (`foo_{bar}`), matching org's `^:{}` export option.
+// Bare markers are unwrapped back into plain literal text.
+function unwrapBareSubSuperscript() {
+  return (tree: any, file: any) => {
+    const src = String(file)
+    visit(tree, ['subscript', 'superscript'], (node: any, index: number | null, parent: any) => {
+      if (!parent || index == null) return
+      const braced = src[node.contentsBegin - 1] === '{'
+      if (braced) return
+      const marker = node.type === 'subscript' ? '_' : '^'
+      parent.children[index] = { type: 'text', value: marker + orgToString(node) }
+    })
+  }
+}
 
 export interface ProcessedOrgProps {
   nodeById: NodeById
@@ -77,6 +97,7 @@ export const ProcessedOrg = (props: ProcessedOrgProps) => {
 
   const orgProcessor = unified()
     .use(uniorgParse)
+    .use(unwrapBareSubSuperscript)
     .use(extractKeywords)
     .use(attachments, {
       idDir: attachDir || undefined,

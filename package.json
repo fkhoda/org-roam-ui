@@ -71,6 +71,7 @@
     "uniorg-slug": "^0.4.8",
     "unist-util-find-after": "^3.0.0",
     "unist-util-is": "^4.1.0",
+    "unist-util-visit": "^2.0.3",
     "use-constant": "^1.1.0",
     "use-undo": "^1.0.5",
     "vfile": "^4.2.1",
