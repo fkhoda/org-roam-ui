@@ -58,6 +58,28 @@ function unwrapBareSubSuperscript() {
   }
 }
 
+// org's explicit line break (`\\` at end of line, optionally followed by
+// trailing spaces) is unimplemented in uniorg-parse/uniorg-rehype — it
+// survives as literal backslash text instead of becoming a break. Convert
+// it to a real <br> in the hast tree, mirroring ox-html's line-break export.
+function orgLineBreaks() {
+  return (tree: any) => {
+    visit(tree, 'text', (node: any, index: number | null, parent: any) => {
+      if (!parent || index == null || !/\\\\[ \t]*\n/.test(node.value)) return
+      const parts = node.value.split(/(\\\\[ \t]*\n)/)
+      const replacement = parts
+        .filter((part: string) => part.length)
+        .map((part: string) =>
+          /^\\\\[ \t]*\n$/.test(part)
+            ? { type: 'element', tagName: 'br', properties: {}, children: [] }
+            : { type: 'text', value: part },
+        )
+      parent.children.splice(index, 1, ...replacement)
+      return index + replacement.length
+    })
+  }
+}
+
 export interface ProcessedOrgProps {
   nodeById: NodeById
   previewNode: OrgRoamNode
@@ -105,6 +127,7 @@ export const ProcessedOrg = (props: ProcessedOrgProps) => {
     })
     .use(uniorgSlug)
     .use(uniorg2rehype, { useSections: true })
+    .use(orgLineBreaks)
 
   const nodesInNote =
     linksByNodeId[previewNode?.id!]?.reduce((acc: NodeById, link: OrgRoamLink) => {
