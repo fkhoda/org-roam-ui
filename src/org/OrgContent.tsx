@@ -23,7 +23,12 @@ import { OrgImage } from '../components/Sidebar/OrgImage'
 import { PreviewLink } from '../components/Sidebar/Link'
 import { usePreview } from '../components/Sidebar/PreviewContext'
 import { Section } from '../components/Sidebar/Section'
-import { orgLineBreaks, unwrapBareSubSuperscript } from './plugins'
+import {
+  escapeCurrency,
+  orgLineBreaks,
+  orgSpecialStrings,
+  unwrapBareSubSuperscript,
+} from './plugins'
 
 export interface OrgContentProps {
   /** the note's org (or markdown) text */
@@ -61,6 +66,7 @@ export default function OrgContent({ text, node }: OrgContentProps) {
       base = unified()
         .use(uniorgParse)
         .use(unwrapBareSubSuperscript)
+        .use(orgSpecialStrings)
         .use(extractKeywords)
         .use(uniorgAttach, { idDir: attachDir || undefined, useInheritance })
         .use(uniorgSlug)
@@ -100,5 +106,8 @@ export default function OrgContent({ text, node }: OrgContentProps) {
       })
   }, [isMarkdown, node, linksByNodeId, nodeById, macros, attachDir, useInheritance])
 
-  return useMemo(() => processor.processSync(text).result, [processor, text])
+  return useMemo(
+    () => processor.processSync(isMarkdown ? text : escapeCurrency(text)).result,
+    [processor, text],
+  )
 }

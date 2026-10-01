@@ -48,3 +48,44 @@ export function orgLineBreaks() {
     })
   }
 }
+
+const blockStart = /^\s*#\+begin_/i
+const blockEnd = /^\s*#\+end_/i
+const inlineCode = /(=[^=\s][^=\n]*?=|~[^~\s][^~\n]*?~)/
+
+/**
+ * uniorg reads `$...$` as inline math, so prices ("$8.9M ... $283.2M") turn into italic LaTeX.
+ * Like Pandoc, treat a `$` right before a digit as a dollar sign: write it as org's `\dollar{}`
+ * entity, outside blocks, fixed-width lines and inline code.
+ */
+export function escapeCurrency(text: string) {
+  let inBlock = false
+  return text
+    .split('\n')
+    .map((line) => {
+      if (blockStart.test(line)) inBlock = true
+      if (inBlock) {
+        if (blockEnd.test(line)) inBlock = false
+        return line
+      }
+      if (/^\s*:/.test(line) || !line.includes('$')) return line
+      return line
+        .split(inlineCode)
+        .map((part, i) => (i % 2 ? part : part.replace(/\$(?=\d)/g, '\\dollar{}')))
+        .join('')
+    })
+    .join('\n')
+}
+
+/** org export's special strings: `---` em dash, `--` en dash, `...` ellipsis (not in code). */
+export function orgSpecialStrings() {
+  return (tree: OrgData) => {
+    visit(tree, 'text', (node) => {
+      const text = node as unknown as { value: string }
+      text.value = text.value
+        .replace(/---/g, '—')
+        .replace(/--/g, '–')
+        .replace(/\.\.\./g, '…')
+    })
+  }
+}

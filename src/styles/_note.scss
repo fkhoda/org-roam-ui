@@ -4,6 +4,9 @@
 
 .org-note {
   color: theme.$text-primary;
+  // Carbon's reset sets tight line heights; notes are long-form reading
+  line-height: 1.6;
+  overflow-wrap: break-word;
 
   .katex {
     overflow-x: auto;
@@ -20,8 +23,14 @@
   }
 
   li {
-    padding-top: $spacing-02;
+    padding-top: $spacing-03;
     font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  ul,
+  ol {
+    margin-bottom: $spacing-04;
   }
 
   li::marker {
@@ -30,13 +39,9 @@
   }
 
   p {
-    padding-bottom: $spacing-03;
+    padding-bottom: $spacing-04;
     font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  div {
-    hyphens: auto;
+    line-height: 1.6;
   }
 
   // Carbon's reset flattens these
@@ -190,8 +195,11 @@
   }
 
   table {
+    width: 100%;
     margin: 1em 0;
     border-collapse: collapse;
+    font-size: 0.8125rem;
+    line-height: 1.5;
   }
 
   th,
@@ -202,7 +210,8 @@
     // close to black. gray.500 (base4) is the ramp midpoint, giving a
     // consistent subtle divider on both light and dark themes.
     border: 1px solid var(--orui-gray-500);
-    padding: 4px 8px;
+    padding: $spacing-03 $spacing-04;
+    vertical-align: top;
     // uniorg-rehype emits plain <th>/<td> with no per-column alignment
     // class, so the only alignment that matters is the UA stylesheet
     // default — which centers <th> but left-aligns <td>. Match them so
