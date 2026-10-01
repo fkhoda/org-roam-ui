@@ -339,7 +339,8 @@ body {
   display: none;
 }
 
-// the 3D view's hint line ("Left-click: rotate, ...")
+// the graph's hover tooltip and the 3D view's hint line ("Left-click: rotate, ...")
+.float-tooltip-kap,
 .scene-nav-info {
   @include type.font-family('sans');
 }
