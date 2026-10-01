@@ -142,7 +142,9 @@ export function Graph(props: GraphProps) {
   }
 
   const [animatedOpacity, setOpacity] = useState(1)
-  const opacity = visuals.highlightAnim ? animatedOpacity : hoverNode ? 1 : 0
+  // in 3D every animation frame would recolor every node: highlight without the fade
+  const animate = visuals.highlightAnim && !threeDim
+  const opacity = animate ? animatedOpacity : hoverNode ? 1 : 0
   const easing = algos[visuals.algorithmName] ?? algos.Linear
   const [fadeIn, cancelFadeIn] = useAnimation(setOpacity, {
     duration: visuals.animationSpeed,
@@ -162,7 +164,7 @@ export function Graph(props: GraphProps) {
     latestOpacity.current = animatedOpacity
   })
   useEffect(() => {
-    if (!visuals.highlightAnim) return
+    if (!animate) return
     if (hoverNode) return fadeIn()
     // don't start the fade out at 1 when moving quickly off a node that was fading in
     cancelFadeIn()
@@ -271,8 +273,11 @@ export function Graph(props: GraphProps) {
       return linkColor({ ...colorContext, sourceId, targetId, highlighted: lit })
     },
     linkWidth: (link) => {
-      if (visuals.highlightLinkSize === 1) return visuals.linkWidth
       const lit = isLinkRelatedToNode(link, hoverNode) || isLinkRelatedToNode(link, lastHoverNode)
+      // 3D draws links of width 0 as lines and others as cylinders, which are much slower:
+      // only highlighted links get a width there
+      if (threeDim && !lit) return 0
+      if (visuals.highlightLinkSize === 1) return visuals.linkWidth
       return lit
         ? visuals.linkWidth * (1 + opacity * (visuals.highlightLinkSize - 1))
         : visuals.linkWidth
@@ -318,7 +323,7 @@ export function Graph(props: GraphProps) {
             graphRef={graphRef as never}
             onMount={() => setGraphMounts((n) => n + 1)}
             visuals={visuals}
-            highlighted={(id) => highlighted.has(id)}
+            highlighted={highlighted}
             labelTextColor={labelTextColor}
             labelBackgroundColor={labelBackgroundColor}
           />
