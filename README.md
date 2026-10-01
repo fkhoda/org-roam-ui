@@ -204,6 +204,21 @@ By default, org-roam-ui will try to open itself in your default browser. To disa
 (setq org-roam-ui-open-on-start nil)
 ```
 
+## Development
+
+The UI is a React app built with [Vite](https://vite.dev) into `out/`, which is committed:
+Emacs (and any other editor speaking the same protocol) serves it on port 35901.
+
+```sh
+npm ci
+npm run dev    # dev server; note text and images are proxied to the editor on :35901
+npm run check  # typecheck, lint, format check and production build
+npm run build  # rebuild out/ (commit it with your changes)
+```
+
+The page talks to the editor over a websocket on port 35903. To use another one, open the
+page with `?ws=ws://host:port`.
+
 ## Disclaimers ‼
 
 - We only support [org-roam v2](https://blog.jethro.dev/posts/org_roam_v2/); v1 will never be supported.
