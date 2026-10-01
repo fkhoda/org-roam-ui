@@ -108,6 +108,6 @@ export default function OrgContent({ text, node }: OrgContentProps) {
 
   return useMemo(
     () => processor.processSync(isMarkdown ? text : escapeCurrency(text)).result,
-    [processor, text],
+    [processor, text, isMarkdown],
   )
 }
