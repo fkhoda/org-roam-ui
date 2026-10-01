@@ -43,6 +43,7 @@ export default function Graph3D({
         const sprite = new SpriteText(node.title.substring(0, 40))
         sprite.color = labelTextColor
         sprite.backgroundColor = labelBackgroundColor
+        sprite.fontFace = 'IBM Plex Sans'
         sprite.padding = 2
         sprite.textHeight = 8
         return sprite

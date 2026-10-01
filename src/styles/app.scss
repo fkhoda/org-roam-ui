@@ -338,3 +338,8 @@ body {
 .setting-row .cds--toggle__text {
   display: none;
 }
+
+// the 3D view's hint line ("Left-click: rotate, ...")
+.scene-nav-info {
+  @include type.font-family('sans');
+}

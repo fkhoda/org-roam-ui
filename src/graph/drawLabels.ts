@@ -77,7 +77,7 @@ export function drawLabel(o: DrawLabelOptions) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = hexToRGBA(o.labelTextColor, textOpacity)
-  ctx.font = `${fontSize}px Sans-Serif`
+  ctx.font = `${fontSize}px 'IBM Plex Sans', sans-serif`
   const lines = wrap(label, { width: visuals.labelWordWrap }).split('\n')
   if (title.length > visuals.labelLength) lines[lines.length - 1] += '...'
   const offset = o.hovered ? 1 + 0.3 * opacity : 1

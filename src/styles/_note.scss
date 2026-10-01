@@ -1,6 +1,7 @@
 // The rendered note: org-export classes, headings, lists, tables, code.
 @use '@carbon/react/scss/spacing' as *;
 @use '@carbon/react/scss/theme';
+@use '@carbon/react/scss/type';
 
 .org-note {
   color: theme.$text-primary;
@@ -74,7 +75,7 @@
   kbd,
   samp,
   pre {
-    font-family: 'IBM Plex Mono', monospace;
+    @include type.font-family('mono');
   }
 
   blockquote {
@@ -111,13 +112,13 @@
 
   .priority {
     color: var(--orui-orange-500);
-    font-family: monospace;
+    @include type.font-family('mono');
   }
 
   .tag {
     padding: 2px;
     background: theme.$layer-02;
-    font-family: monospace;
+    @include type.font-family('mono');
     font-size: 80%;
     font-weight: normal;
   }
