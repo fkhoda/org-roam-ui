@@ -64,6 +64,7 @@ function ThemeSelect() {
     <div className="setting-row">
       <span>Theme</span>
       <Dropdown<string>
+        autoAlign
         id={useId()}
         className="setting-select"
         size="sm"
@@ -109,6 +110,7 @@ function ColorsPanel({
         <span>Nodes</span>
         <span className="setting-row__label">
           <IconButton
+            autoAlign
             label="Shuffle node colors"
             kind="ghost"
             size="sm"
@@ -125,6 +127,7 @@ function ColorsPanel({
             <Shuffle />
           </IconButton>
           <IconButton
+            autoAlign
             label="Cycle node colors"
             kind="ghost"
             size="sm"

@@ -158,6 +158,7 @@ function TagColorPanel({
               onChange={(color) => setTagColors((current) => ({ ...current, [tag]: color }))}
             />
             <IconButton
+              autoAlign
               label={`Remove color of ${tag}`}
               kind="ghost"
               size="sm"

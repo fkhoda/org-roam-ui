@@ -28,6 +28,7 @@ export function SelectMenu<V extends string>(props: SelectMenuProps<V>) {
         {infoText && <InfoTooltip infoText={infoText} />}
       </span>
       <Dropdown<Option<V>>
+        autoAlign
         id={useId()}
         className="setting-select"
         size="sm"

@@ -250,6 +250,11 @@ body {
   &__tags {
     display: flex;
     flex-wrap: wrap;
+    gap: $spacing-03;
+
+    .cds--tag {
+      margin: 0;
+    }
   }
 }
 
@@ -340,7 +345,22 @@ body {
 }
 
 // the graph's hover tooltip and the 3D view's hint line ("Left-click: rotate, ...")
-.float-tooltip-kap,
+// (body: the tooltip library's own rule comes later in the page)
+body .float-tooltip-kap,
 .scene-nav-info {
   @include type.font-family('sans');
+}
+
+// dropdowns in settings: the button fits its value, the open list fits its longest option
+.setting-select {
+  min-width: 8rem;
+
+  // Carbon sizes the list to the button, which cuts long options short
+  .cds--list-box__menu {
+    width: 18rem !important;
+  }
+
+  .cds--list-box__menu-item__option {
+    white-space: nowrap;
+  }
 }

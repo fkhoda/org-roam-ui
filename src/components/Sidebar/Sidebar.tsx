@@ -50,7 +50,15 @@ export function Sidebar(props: SidebarProps) {
     onClick: (event: MouseEvent) => void,
     disabled = false,
   ) => (
-    <IconButton label={label} kind="ghost" size="sm" onClick={onClick} disabled={disabled}>
+    <IconButton
+      autoAlign
+      label={label}
+      kind="ghost"
+      size="sm"
+      align="bottom"
+      onClick={onClick}
+      disabled={disabled}
+    >
       <Icon />
     </IconButton>
   )

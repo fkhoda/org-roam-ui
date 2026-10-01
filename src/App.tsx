@@ -252,6 +252,7 @@ export default function App() {
         <header className="header-bar">
           {scope.nodeIds.length > 0 && (
             <IconButton
+              autoAlign
               label="Return to the main graph"
               kind="ghost"
               align="bottom"
@@ -261,6 +262,7 @@ export default function App() {
             </IconButton>
           )}
           <IconButton
+            autoAlign
             label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
             kind="ghost"
             align="bottom-end"

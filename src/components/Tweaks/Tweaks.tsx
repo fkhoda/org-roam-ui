@@ -55,7 +55,13 @@ export function Tweaks(props: TweaksProps) {
   if (!showTweaks) {
     return (
       <div className="tweaks-button">
-        <IconButton label="Settings" kind="ghost" align="right" onClick={() => setShowTweaks(true)}>
+        <IconButton
+          autoAlign
+          label="Settings"
+          kind="ghost"
+          align="right"
+          onClick={() => setShowTweaks(true)}
+        >
           <Settings />
         </IconButton>
       </div>
@@ -80,10 +86,18 @@ export function Tweaks(props: TweaksProps) {
           {props.threeDim ? '3D' : '2D'}
         </Button>
         <span>
-          <IconButton label="Reset settings to defaults" kind="ghost" size="sm" onClick={reset}>
+          <IconButton
+            autoAlign
+            label="Reset settings to defaults"
+            kind="ghost"
+            size="sm"
+            align="bottom"
+            onClick={reset}
+          >
             <Reset />
           </IconButton>
           <IconButton
+            autoAlign
             label="Close settings"
             kind="ghost"
             size="sm"

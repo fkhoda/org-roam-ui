@@ -10,7 +10,13 @@ export interface TooltipProps {
 /** A hover tooltip around a single focusable element. */
 export function Tooltip({ content, children, placement = 'bottom' }: TooltipProps) {
   return (
-    <CarbonTooltip label={content} align={placement} enterDelayMs={400} leaveDelayMs={100}>
+    <CarbonTooltip
+      label={content}
+      align={placement}
+      autoAlign
+      enterDelayMs={400}
+      leaveDelayMs={100}
+    >
       {children}
     </CarbonTooltip>
   )
