@@ -56,3 +56,6 @@ export function resolveColor(name: string, palette: Palette): string {
 
 /** CSS variable for a palette color name: `gray.500` -> `--orui-gray-500`. */
 export const cssVar = (name: string) => `--orui-${name.replace('.', '-')}`
+
+/** A palette color name as CSS: `gray.500` -> `var(--orui-gray-500)`; '' for none. */
+export const cssColor = (name: string) => (name ? `var(${cssVar(name)})` : 'transparent')

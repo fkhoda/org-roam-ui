@@ -1,4 +1,3 @@
-import { Box } from '@chakra-ui/react'
 import type { Physics } from '../../config'
 import type { Setter } from '../../hooks/usePersistentState'
 import { SettingsStack, SliderSetting, ToggleSetting } from './controls'
@@ -20,8 +19,8 @@ export function PhysicsPanel({
   })
 
   return (
-    <Box>
-      <SettingsStack pl={7}>
+    <div>
+      <SettingsStack>
         <ToggleSetting
           label="Gravity"
           value={physics.gravityOn}
@@ -39,12 +38,11 @@ export function PhysicsPanel({
         <SliderSetting label="Stabilization rate" {...slider('alphaDecay', 50)} />
       </SettingsStack>
       <SettingsAccordion
-        pl={3}
         sections={[
           {
             title: 'Advanced',
             content: (
-              <SettingsStack pl={3}>
+              <SettingsStack>
                 <ToggleSetting
                   label="Collision"
                   infoText="Costs performance: turn it off if the graph is slow"
@@ -84,6 +82,6 @@ export function PhysicsPanel({
           },
         ]}
       />
-    </Box>
+    </div>
   )
 }

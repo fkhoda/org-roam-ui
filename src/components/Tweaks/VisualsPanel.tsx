@@ -1,23 +1,13 @@
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Menu,
-  NativeSelect,
-  Portal,
-  Stack,
-  Text,
-} from '@chakra-ui/react'
-import { LuArrowRight, LuChevronDown, LuShuffle } from 'react-icons/lu'
+import { ArrowRight, Shuffle } from '@carbon/icons-react'
+import { Dropdown, IconButton, Select, SelectItem } from '@carbon/react'
+import { useId } from 'react'
 import { algos, colorList, type Coloring, type Visuals } from '../../config'
 import { useEditorName } from '../../context'
 import type { Setter } from '../../hooks/usePersistentState'
 import { themes } from '../../theme/themes'
 import { useTheme } from '../../theme/ThemeProvider'
-import { ColorPicker, SchemeSwatch, Swatch } from '../ui/ColorPicker'
+import { ColorPicker, PopoverButton, SchemeSwatch, SwatchGrid } from '../ui/ColorPicker'
 import { SelectMenu } from '../ui/SelectMenu'
-import { Tooltip } from '../ui/Tooltip'
 import { SettingsStack, SliderSetting, ToggleSetting } from './controls'
 import { SettingsAccordion } from './SettingsAccordion'
 
@@ -31,34 +21,24 @@ export interface VisualsPanelProps {
 
 type SetVisual = <K extends keyof Visuals>(key: K) => (value: Visuals[K]) => void
 
-export function VisualsPanel({
-  visuals,
-  setVisuals,
-  coloring,
-  setColoring,
-  threeDim,
-}: VisualsPanelProps) {
+export function VisualsPanel(props: VisualsPanelProps) {
+  const { visuals, setVisuals, coloring, setColoring, threeDim } = props
   const set: SetVisual = (key) => (value) => setVisuals((current) => ({ ...current, [key]: value }))
   return (
-    <Stack gap={2}>
-      <Box pl={7} pr={2}>
-        <ThemeSelect />
-      </Box>
-      <Box pl={7} pr={2}>
-        <SelectMenu
-          label="Graph coloring"
-          value={coloring.method}
-          options={[
-            { value: 'degree', label: 'Number of links' },
-            { value: 'community', label: 'Communities' },
-          ]}
-          display={coloring.method === 'degree' ? 'Links' : 'Communities'}
-          onChange={(method) => setColoring((current) => ({ ...current, method }))}
-        />
-      </Box>
+    <SettingsStack>
+      <ThemeSelect />
+      <SelectMenu
+        label="Graph coloring"
+        value={coloring.method}
+        options={[
+          { value: 'degree', label: 'Number of links' },
+          { value: 'community', label: 'Communities' },
+        ]}
+        display={coloring.method === 'degree' ? 'Links' : 'Communities'}
+        onChange={(method) => setColoring((current) => ({ ...current, method }))}
+      />
       <SettingsAccordion
-        pl={3}
-        defaultValue={['0']}
+        defaultOpen={[0]}
         sections={[
           {
             title: 'Colors',
@@ -73,44 +53,41 @@ export function VisualsPanel({
           { title: 'Citations', content: <CitationsPanel visuals={visuals} set={set} /> },
         ]}
       />
-    </Stack>
+    </SettingsStack>
   )
 }
 
 function ThemeSelect() {
   const { theme, setTheme } = useTheme()
+  const names = Object.keys(themes)
   return (
-    <Flex alignItems="center" justifyContent="space-between">
-      <Text>Theme</Text>
-      <Menu.Root
-        lazyMount
-        positioning={{ placement: 'bottom-end' }}
-        onSelect={({ value }) => setTheme([value, themes[value]])}
-      >
-        <Menu.Trigger asChild>
-          <Button size="sm" variant="outline" colorPalette="gray">
-            {theme[0]}
-            <LuChevronDown />
-          </Button>
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content maxH="60vh" overflowY="auto">
-              {Object.entries(themes).map(([name, colors]) => (
-                <Menu.Item key={name} value={name} justifyContent="space-between" gap={4}>
-                  <Text>{name}</Text>
-                  <Flex height={5} width={20} flexDirection="column" flexWrap="wrap" flexShrink={0}>
-                    {Object.values(colors).map((color, i) => (
-                      <Box key={i} bg={color} flex="1 1 6px" />
-                    ))}
-                  </Flex>
-                </Menu.Item>
+    <div className="setting-row">
+      <span>Theme</span>
+      <Dropdown<string>
+        id={useId()}
+        className="setting-select"
+        size="sm"
+        titleText="Theme"
+        hideLabel
+        label={theme[0]}
+        items={names}
+        selectedItem={names.includes(theme[0]) ? theme[0] : undefined}
+        itemToString={(name) => name ?? ''}
+        itemToElement={(name) => (
+          <span className="theme-option">
+            {name}
+            <span className="swatch swatch--scheme" style={{ width: 64 }}>
+              {Object.values(themes[name]).map((color, i) => (
+                <span key={i} style={{ background: color }} />
               ))}
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
-    </Flex>
+            </span>
+          </span>
+        )}
+        onChange={({ selectedItem }) =>
+          selectedItem && setTheme([selectedItem, themes[selectedItem]])
+        }
+      />
+    </div>
   )
 }
 
@@ -128,13 +105,13 @@ function ColorsPanel({
   const scheme = visuals.nodeColorScheme
   return (
     <SettingsStack>
-      <Flex alignItems="center" justifyContent="space-between" gap={1}>
-        <Text flex={1}>Nodes</Text>
-        <Tooltip content="Shuffle node colors">
+      <div className="setting-row">
+        <span>Nodes</span>
+        <span className="setting-row__label">
           <IconButton
-            aria-label="Shuffle node colors"
+            label="Shuffle node colors"
+            kind="ghost"
             size="sm"
-            variant="ghost"
             onClick={() =>
               setVisuals((current) => ({
                 ...current,
@@ -145,14 +122,12 @@ function ColorsPanel({
               }))
             }
           >
-            <LuShuffle />
+            <Shuffle />
           </IconButton>
-        </Tooltip>
-        <Tooltip content="Cycle node colors">
           <IconButton
-            aria-label="Cycle node colors"
+            label="Cycle node colors"
+            kind="ghost"
             size="sm"
-            variant="ghost"
             onClick={() =>
               setVisuals((current) => ({
                 ...current,
@@ -160,44 +135,28 @@ function ColorsPanel({
               }))
             }
           >
-            <LuArrowRight />
+            <ArrowRight />
           </IconButton>
-        </Tooltip>
-        <Menu.Root lazyMount closeOnSelect={false} positioning={{ placement: 'right-start' }}>
-          <Menu.Trigger asChild>
-            <Button size="sm" variant="outline" colorPalette="gray" aria-label="Node colors">
-              <SchemeSwatch colors={scheme} />
-              <LuChevronDown />
-            </Button>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                {colorList.map((color) => {
-                  const checked = scheme.includes(color)
-                  return (
-                    <Menu.CheckboxItem
-                      key={color}
-                      value={color}
-                      checked={checked}
-                      // the scheme needs at least one color
-                      disabled={checked && scheme.length === 1}
-                      onCheckedChange={(on) =>
-                        set('nodeColorScheme')(
-                          on ? [...scheme, color] : scheme.filter((c) => c !== color),
-                        )
-                      }
-                    >
-                      <Swatch color={color} />
-                      <Menu.ItemIndicator />
-                    </Menu.CheckboxItem>
+          <PopoverButton label="Node colors" display={<SchemeSwatch colors={scheme} />}>
+            {() => (
+              <SwatchGrid
+                colors={colorList}
+                isSelected={(color) => scheme.includes(color)}
+                onPick={(color) =>
+                  // toggle the color; the scheme keeps at least one
+                  set('nodeColorScheme')(
+                    !scheme.includes(color)
+                      ? [...scheme, color]
+                      : scheme.length > 1
+                        ? scheme.filter((c) => c !== color)
+                        : scheme,
                   )
-                })}
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
-      </Flex>
+                }
+              />
+            )}
+          </PopoverButton>
+        </span>
+      </div>
       <ColorPicker
         label="Links"
         value={visuals.linkColorScheme}
@@ -378,23 +337,21 @@ function LabelsPanel({ visuals, set }: { visuals: Visuals; set: SetVisual }) {
         </>
       )}
       <ColorPicker label="Text" value={visuals.labelTextColor} onChange={set('labelTextColor')} />
-      <Box>
-        <ColorPicker
-          label="Background"
-          value={visuals.labelBackgroundColor}
-          onChange={set('labelBackgroundColor')}
+      <ColorPicker
+        label="Background"
+        value={visuals.labelBackgroundColor}
+        onChange={set('labelBackgroundColor')}
+      />
+      {visuals.labelBackgroundColor && (
+        <SliderSetting
+          label="Background opacity"
+          value={visuals.labelBackgroundOpacity}
+          min={0}
+          max={1}
+          step={0.01}
+          onChange={set('labelBackgroundOpacity')}
         />
-        {visuals.labelBackgroundColor && (
-          <SliderSetting
-            label="Background opacity"
-            value={visuals.labelBackgroundOpacity}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={set('labelBackgroundOpacity')}
-          />
-        )}
-      </Box>
+      )}
       <SliderSetting
         label="Label font size"
         value={visuals.labelFontSize}
@@ -432,6 +389,7 @@ function LabelsPanel({ visuals, set }: { visuals: Visuals; set: SetVisual }) {
 }
 
 function HighlightingPanel({ visuals, set }: { visuals: Visuals; set: SetVisual }) {
+  const easingId = useId()
   return (
     <ToggleSetting label="Highlight" value={visuals.highlight} onChange={set('highlight')}>
       <SettingsStack>
@@ -466,20 +424,17 @@ function HighlightingPanel({ visuals, set }: { visuals: Visuals; set: SetVisual 
             step={10}
             onChange={set('animationSpeed')}
           />
-          <NativeSelect.Root size="sm">
-            <NativeSelect.Field
-              aria-label="Animation easing"
-              value={visuals.algorithmName}
-              onChange={(event) => set('algorithmName')(event.target.value)}
-            >
-              {Object.keys(algos).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+          <Select
+            id={easingId}
+            size="sm"
+            labelText="Easing"
+            value={visuals.algorithmName}
+            onChange={(event) => set('algorithmName')(event.target.value)}
+          >
+            {Object.keys(algos).map((name) => (
+              <SelectItem key={name} value={name} text={name} />
+            ))}
+          </Select>
         </ToggleSetting>
       </SettingsStack>
     </ToggleSetting>

@@ -12,6 +12,10 @@ on:
 defaults:
   run:
     shell: 'bash'
+env:
+  # Carbon's packages report usage to IBM on install unless told not to
+  IBM_TELEMETRY_DISABLED: 'true'
+
 jobs:
   changes:
     runs-on: 'ubuntu-latest'

@@ -206,10 +206,12 @@ By default, org-roam-ui will try to open itself in your default browser. To disa
 
 ## Development
 
-The UI is a React app built with [Vite](https://vite.dev) into `out/`, which is committed:
+The UI is a React app using [Carbon](https://carbondesignsystem.com), built with
+[Vite](https://vite.dev) into `out/`, which is committed:
 Emacs (and any other editor speaking the same protocol) serves it on port 35901.
 
 ```sh
+export IBM_TELEMETRY_DISABLED=true  # Carbon reports installs to IBM otherwise
 npm ci
 npm run dev    # dev server; note text and images are proxied to the editor on :35901
 npm run check  # typecheck, lint, format check and production build

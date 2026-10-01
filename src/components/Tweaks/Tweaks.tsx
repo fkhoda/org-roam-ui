@@ -1,5 +1,5 @@
-import { Box, Button, Flex, IconButton } from '@chakra-ui/react'
-import { LuHistory, LuSettings, LuX } from 'react-icons/lu'
+import { Close, Reset, Settings } from '@carbon/icons-react'
+import { Button, IconButton } from '@carbon/react'
 import {
   initialBehavior,
   initialColoring,
@@ -19,7 +19,6 @@ import {
 } from '../../config'
 import { usePersistentState, type Setter } from '../../hooks/usePersistentState'
 import { useTheme } from '../../theme/ThemeProvider'
-import { Tooltip } from '../ui/Tooltip'
 import { BehaviorPanel } from './BehaviorPanel'
 import { FilterPanel } from './FilterPanel'
 import { PhysicsPanel } from './PhysicsPanel'
@@ -55,11 +54,11 @@ export function Tweaks(props: TweaksProps) {
 
   if (!showTweaks) {
     return (
-      <Box position="absolute" zIndex="overlay" mt={1}>
-        <IconButton variant="subtle" aria-label="Settings" onClick={() => setShowTweaks(true)}>
-          <LuSettings />
+      <div className="tweaks-button">
+        <IconButton label="Settings" kind="ghost" align="right" onClick={() => setShowTweaks(true)}>
+          <Settings />
         </IconButton>
-      </Box>
+      </div>
     )
   }
 
@@ -75,45 +74,26 @@ export function Tweaks(props: TweaksProps) {
   }
 
   return (
-    <Box
-      position="absolute"
-      zIndex={10}
-      bg="alt.100"
-      color="black"
-      w="xs"
-      mt={2}
-      ml={2}
-      pb={3}
-      borderRadius="lg"
-      boxShadow="xl"
-      fontSize="sm"
-      display="flex"
-      flexDirection="column"
-      maxH="95vh"
-    >
-      <Flex justifyContent="space-between" alignItems="center" px={2} pt={1}>
-        <Tooltip content={`Switch to the ${props.threeDim ? '2D' : '3D'} view`}>
-          <Button onClick={() => props.setThreeDim((on) => !on)} variant="subtle" size="sm">
-            {props.threeDim ? '3D' : '2D'}
-          </Button>
-        </Tooltip>
-        <Flex alignItems="center">
-          <Tooltip content="Reset settings to defaults">
-            <IconButton aria-label="Reset defaults" onClick={reset} variant="subtle" size="sm">
-              <LuHistory />
-            </IconButton>
-          </Tooltip>
+    <aside className="tweaks" aria-label="Settings">
+      <div className="tweaks__header">
+        <Button kind="ghost" size="sm" onClick={() => props.setThreeDim((on) => !on)}>
+          {props.threeDim ? '3D' : '2D'}
+        </Button>
+        <span>
+          <IconButton label="Reset settings to defaults" kind="ghost" size="sm" onClick={reset}>
+            <Reset />
+          </IconButton>
           <IconButton
-            aria-label="Close settings"
-            variant="subtle"
+            label="Close settings"
+            kind="ghost"
             size="sm"
             onClick={() => setShowTweaks(false)}
           >
-            <LuX />
+            <Close />
           </IconButton>
-        </Flex>
-      </Flex>
-      <Box overflowY="auto" px={2} className="thin-scrollbar">
+        </span>
+      </div>
+      <div className="tweaks__body thin-scrollbar">
         <SettingsAccordion
           big
           sections={[
@@ -160,7 +140,7 @@ export function Tweaks(props: TweaksProps) {
             },
           ]}
         />
-      </Box>
-    </Box>
+      </div>
+    </aside>
   )
 }

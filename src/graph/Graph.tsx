@@ -1,4 +1,3 @@
-import { Box } from '@chakra-ui/react'
 import { forceCenter, forceCollide, forceX, forceY, forceZ } from 'd3-force-3d'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import ForceGraph2D, { type ForceGraphMethods, type ForceGraphProps } from 'react-force-graph-2d'
@@ -311,7 +310,7 @@ export function Graph(props: GraphProps) {
   }
 
   return (
-    <Box overflow="hidden" onClick={props.onBackgroundClick}>
+    <div style={{ overflow: 'hidden' }} onClick={props.onBackgroundClick}>
       {threeDim ? (
         <Suspense>
           <Graph3D
@@ -339,6 +338,6 @@ export function Graph(props: GraphProps) {
           }}
         />
       )}
-    </Box>
+    </div>
   )
 }

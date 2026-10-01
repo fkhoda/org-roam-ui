@@ -1,8 +1,7 @@
-import { ChakraProvider } from '@chakra-ui/react'
 import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } from 'react'
 import { usePersistentState, type Setter } from '../hooks/usePersistentState'
 import { cssVar, makePalette, type EditorTheme, type Palette } from './palette'
-import { system } from './system'
+import { carbonTokens } from './carbon'
 import { themes } from './themes'
 
 /** The active theme: its name ("custom" when the editor sent it) and colors. */
@@ -40,16 +39,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     const accent = palette[highlightColor] ?? palette['purple.500']
     style.setProperty(cssVar('accent'), accent)
-    style.setProperty(cssVar('accent-border'), `${accent}aa`)
+    for (const [name, value] of Object.entries(carbonTokens(palette, accent))) {
+      style.setProperty(name, value)
+    }
   }, [palette, highlightColor])
 
   const state = useMemo(
     () => ({ theme, setTheme, highlightColor, setHighlightColor, palette }),
     [theme, setTheme, highlightColor, setHighlightColor, palette],
   )
-  return (
-    <ThemeContext.Provider value={state}>
-      <ChakraProvider value={system}>{children}</ChakraProvider>
-    </ThemeContext.Provider>
-  )
+  return <ThemeContext.Provider value={state}>{children}</ThemeContext.Provider>
 }

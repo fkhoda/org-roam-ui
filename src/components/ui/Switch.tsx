@@ -1,23 +1,23 @@
-import { Switch as ChakraSwitch } from '@chakra-ui/react'
+import { Toggle } from '@carbon/react'
+import { useId } from 'react'
 
 export interface SwitchProps {
   checked: boolean
   onChange: (checked: boolean) => void
-  label?: string
+  label: string
 }
 
 export function Switch({ checked, onChange, label }: SwitchProps) {
   return (
-    <ChakraSwitch.Root
+    <Toggle
+      id={useId()}
       size="sm"
-      checked={checked}
-      onCheckedChange={(details) => onChange(details.checked)}
-      aria-label={label}
-    >
-      <ChakraSwitch.HiddenInput />
-      <ChakraSwitch.Control>
-        <ChakraSwitch.Thumb />
-      </ChakraSwitch.Control>
-    </ChakraSwitch.Root>
+      hideLabel
+      labelText={label}
+      labelA=""
+      labelB=""
+      toggled={checked}
+      onToggle={onChange}
+    />
   )
 }

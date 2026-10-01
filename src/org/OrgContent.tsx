@@ -1,4 +1,3 @@
-import { Box, chakra } from '@chakra-ui/react'
 import 'katex/dist/katex.css'
 import type { Components } from 'hast-util-to-jsx-runtime'
 import { useMemo, type ReactNode } from 'react'
@@ -79,25 +78,10 @@ export default function OrgContent({ text, node }: OrgContentProps) {
         // a heading node's own section: show its contents without repeating its heading
         const level = /section-level-(\d+)/.exec(className ?? '')?.[1]
         if (level && Number(level) === node.level) {
-          return <Box>{(children as ReactNode[]).slice(1)}</Box>
+          return <div>{(children as ReactNode[]).slice(1)}</div>
         }
         return <Section className={className}>{children}</Section>
       },
-      blockquote: ({ children }) => (
-        <chakra.blockquote
-          color="gray.800"
-          bg="gray.300"
-          pt={4}
-          pb={2}
-          mb={4}
-          mt={3}
-          pl={4}
-          borderLeftWidth={4}
-          borderLeftColor="gray.700"
-        >
-          {children}
-        </chakra.blockquote>
-      ),
       p: ({ children }) => <p lang="en">{children}</p>,
     }
     return base

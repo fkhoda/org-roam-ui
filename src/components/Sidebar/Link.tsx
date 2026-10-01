@@ -1,9 +1,7 @@
-import { Box, HoverCard, Link, Portal, Text } from '@chakra-ui/react'
-import { lazy, Suspense, useState, type ReactNode } from 'react'
-import { LuExternalLink } from 'react-icons/lu'
-import type { OrgRoamNode } from '../../api'
+import { Launch } from '@carbon/icons-react'
+import { Popover, PopoverContent } from '@carbon/react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NoteContext } from '../../context'
-import { defaultNoteStyle, outlineNoteStyle, viewerNoteStyle } from './noteStyle'
 import { usePreview } from './PreviewContext'
 import { useNoteText } from './useNoteText'
 
@@ -28,18 +26,12 @@ export function PreviewLink({ href, children, isWiki, noUnderline }: PreviewLink
   const { nodeByCite } = usePreview()
   const [type, path] = splitHref(href)
 
-  if (!type)
-    return (
-      <Text as="span" color="gray.700">
-        {children}
-      </Text>
-    )
+  if (!type) return <span className="dead-link">{children}</span>
   if (/^https?$/.test(type)) {
     return (
-      <Link href={href} target="_blank" rel="noreferrer" color="accent.fg">
-        {children}
-        <LuExternalLink size="0.8em" />
-      </Link>
+      <a href={href} target="_blank" rel="noreferrer">
+        {children} <Launch size={12} />
+      </a>
     )
   }
 
@@ -49,18 +41,31 @@ export function PreviewLink({ href, children, isWiki, noUnderline }: PreviewLink
     const node = nodeByCite[path]
     if (node && !node.properties.FILELESS) id = node.id
   }
-  if (!id) {
-    return (
-      <Text as="span" color="gray.700" cursor="not-allowed">
-        {children}
-      </Text>
-    )
-  }
+  if (!id) return <span className="dead-link">{children}</span>
   return (
     <NodeLink id={id} isWiki={isWiki} noUnderline={noUnderline}>
       {children}
     </NodeLink>
   )
+}
+
+/** Open after hovering `openDelay` ms; stay open while the pointer is on the trigger or popover. */
+function useHoverOpen(openDelay = 300, closeDelay = 150) {
+  const [open, setOpen] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const schedule = (next: boolean, delay: number) => {
+    clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setOpen(next), delay)
+  }
+  return {
+    open,
+    hoverProps: {
+      onMouseEnter: () => schedule(true, openDelay),
+      onMouseLeave: () => schedule(false, closeDelay),
+    },
+    close: () => schedule(false, 0),
+  }
 }
 
 function NodeLink({
@@ -72,73 +77,51 @@ function NodeLink({
   const { nodeById, setPreviewNode, setSidebarHighlightedNode, openContextMenu, outline } =
     usePreview()
   const node = nodeById[id]
-  const [hovered, setHovered] = useState(false)
-  const text = useNoteText(id, hovered)
+  const { open, hoverProps, close } = useHoverOpen()
+  const text = useNoteText(id, open)
 
   return (
-    <HoverCard.Root
-      lazyMount
-      openDelay={300}
-      closeDelay={150}
-      positioning={{ placement: 'top-start', gutter: 12 }}
-      onOpenChange={({ open }) => open && setHovered(true)}
-    >
-      <HoverCard.Trigger asChild>
-        <Text
-          as="a"
-          tabIndex={0}
-          display="inline"
-          fontWeight={500}
-          color="accent.fg"
-          textDecoration={noUnderline ? undefined : 'underline'}
-          cursor="pointer"
-          _hover={{ textDecoration: 'none', bg: 'accent.subtle' }}
-          onMouseEnter={() => node && setSidebarHighlightedNode(node)}
-          onMouseLeave={() => setSidebarHighlightedNode(null)}
-          onClick={() => node && setPreviewNode(node)}
-          onKeyDown={(event) => event.key === 'Enter' && node && setPreviewNode(node)}
-          onContextMenu={(event) => {
-            event.preventDefault()
-            if (node) openContextMenu(node, event)
-          }}
+    <Popover open={open} onRequestClose={close} align="top-start" autoAlign dropShadow caret>
+      <a
+        tabIndex={0}
+        role="link"
+        className={`node-link${noUnderline ? ' node-link--plain' : ''}`}
+        onMouseEnter={() => {
+          hoverProps.onMouseEnter()
+          if (node) setSidebarHighlightedNode(node)
+        }}
+        onMouseLeave={() => {
+          hoverProps.onMouseLeave()
+          setSidebarHighlightedNode(null)
+        }}
+        onClick={() => {
+          close()
+          if (node) setPreviewNode(node)
+        }}
+        onKeyDown={(event) => event.key === 'Enter' && node && setPreviewNode(node)}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          close()
+          if (node) openContextMenu(node, event)
+        }}
+      >
+        {isWiki ? <>[[{children}]]</> : children}
+      </a>
+      <PopoverContent {...hoverProps}>
+        <div
+          className={`link-preview thin-scrollbar org-note org-note--${outline ? 'outline' : 'viewer'}`}
         >
-          {isWiki ? <>[[{children}]]</> : children}
-        </Text>
-      </HoverCard.Trigger>
-      <Portal>
-        <HoverCard.Positioner>
-          <HoverCard.Content
-            maxW="sm"
-            p={0}
-            onMouseEnter={() => node && setSidebarHighlightedNode(node)}
-            onMouseLeave={() => setSidebarHighlightedNode(null)}
-          >
-            <HoverCard.Arrow>
-              <HoverCard.ArrowTip />
-            </HoverCard.Arrow>
-            <Box
-              maxH="300px"
-              overflowY="auto"
-              className="thin-scrollbar"
-              px={4}
-              py={3}
-              fontSize="xs"
-              color="black"
-              css={{ ...defaultNoteStyle, ...(outline ? outlineNoteStyle : viewerNoteStyle) }}
-            >
-              {node && text !== null ? (
-                <NoteContext.Provider value={{ outline, collapse: false }}>
-                  <Suspense>
-                    <OrgContent text={text} node={node as OrgRoamNode} />
-                  </Suspense>
-                </NoteContext.Provider>
-              ) : (
-                <Text color="fg.subtle">Loading…</Text>
-              )}
-            </Box>
-          </HoverCard.Content>
-        </HoverCard.Positioner>
-      </Portal>
-    </HoverCard.Root>
+          {node && text !== null ? (
+            <NoteContext.Provider value={{ outline, collapse: false }}>
+              <Suspense>
+                <OrgContent text={text} node={node} />
+              </Suspense>
+            </NoteContext.Provider>
+          ) : (
+            <p className="loading-text">Loading…</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

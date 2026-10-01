@@ -1,0 +1,341 @@
+// The rendered note: org-export classes, headings, lists, tables, code.
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme';
+
+.org-note {
+  color: theme.$text-primary;
+
+  .katex {
+    overflow-x: auto;
+  }
+
+  ol {
+    padding: $spacing-02 0 $spacing-02 $spacing-05;
+    list-style-type: decimal;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+    list-style-type: disc;
+  }
+
+  li {
+    padding-top: $spacing-02;
+    font-size: 0.875rem;
+  }
+
+  li::marker {
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  p {
+    padding-bottom: $spacing-03;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  div {
+    hyphens: auto;
+  }
+
+  // Carbon's reset flattens these
+  sub,
+  sup {
+    position: relative;
+    font-size: 75%;
+    line-height: 0;
+  }
+
+  sub {
+    bottom: -0.25em;
+  }
+
+  sup {
+    top: -0.5em;
+  }
+
+  strong,
+  b {
+    font-weight: 600;
+  }
+
+  em,
+  i {
+    font-style: italic;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  blockquote {
+    margin: $spacing-04 0 $spacing-05;
+    padding: $spacing-05 $spacing-05 $spacing-03;
+    border-left: 4px solid var(--orui-gray-700);
+    background: var(--orui-gray-300);
+    color: var(--orui-gray-800);
+  }
+
+  a {
+    color: theme.$link-primary;
+  }
+
+  .title {
+    margin-bottom: 0.2em;
+    text-align: center;
+  }
+
+  .subtitle {
+    margin-top: 0;
+    font-size: medium;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .TODO {
+    color: var(--orui-red-500);
+  }
+
+  .DONE {
+    color: var(--orui-green-500);
+  }
+
+  .priority {
+    color: var(--orui-orange-500);
+    font-family: monospace;
+  }
+
+  .tag {
+    padding: 2px;
+    background: theme.$layer-02;
+    font-family: monospace;
+    font-size: 80%;
+    font-weight: normal;
+  }
+
+  .timestamp {
+    color: theme.$text-helper;
+  }
+
+  .timestamp-kwd {
+    color: var(--orui-cyan-500);
+  }
+
+  .equationContainer {
+    display: table;
+    width: 100%;
+    text-align: center;
+  }
+
+  .equation {
+    vertical-align: middle;
+  }
+
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+
+  .inlinetask {
+    margin: 10px;
+    padding: 10px;
+    border: 2px solid var(--orui-gray-600);
+  }
+
+  .org-right {
+    margin-right: 0;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .org-left {
+    margin-right: auto;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .org-center {
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+  }
+
+  .underline {
+    text-decoration: underline;
+  }
+
+  p.verse {
+    margin-left: 3%;
+  }
+
+  pre {
+    margin: 1.2em;
+    padding: 8pt;
+    overflow: auto;
+    background: theme.$layer-02;
+    border-radius: 3px;
+  }
+
+  caption.t-above {
+    caption-side: top;
+  }
+
+  caption.t-bottom {
+    caption-side: bottom;
+  }
+
+  table {
+    margin: 1em 0;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    // gray.N maps to the active theme's baseN (N/100-1), which runs from
+    // near-background (low) to near-foreground (high) — not light-to-dark.
+    // gray.300 (base2) sits near the background end, so on dark themes it's
+    // close to black. gray.500 (base4) is the ramp midpoint, giving a
+    // consistent subtle divider on both light and dark themes.
+    border: 1px solid var(--orui-gray-500);
+    padding: 4px 8px;
+    // uniorg-rehype emits plain <th>/<td> with no per-column alignment
+    // class, so the only alignment that matters is the UA stylesheet
+    // default — which centers <th> but left-aligns <td>. Match them so
+    // headers line up with their column's cells.
+    text-align: left;
+  }
+
+  th {
+    font-weight: bold;
+  }
+
+  th.org-right,
+  th.org-left,
+  th.org-center {
+    text-align: center;
+  }
+
+  td.org-right {
+    text-align: right;
+  }
+
+  td.org-center {
+    text-align: center;
+  }
+
+  .footpara {
+    display: inline;
+  }
+
+  .footdef {
+    margin-bottom: 1em;
+  }
+
+  .figure {
+    padding: 1em;
+  }
+
+  .figure p {
+    text-align: center;
+  }
+
+  .math.math-display .katex {
+    overflow: auto;
+    min-height: 1.5em;
+  }
+
+  // a heading with its collapse button
+  .headingFlex {
+    display: flex;
+    align-items: baseline;
+    gap: $spacing-02;
+  }
+
+  .heading-toggle {
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: theme.$icon-secondary;
+    cursor: pointer;
+
+    &:hover {
+      color: theme.$icon-interactive;
+    }
+  }
+
+  // viewer: headings first, chevron after
+  &--viewer {
+    .headingFlex {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+
+    .outlineHeadingButton {
+      display: none;
+    }
+
+    h1 {
+      padding-top: $spacing-03;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    h2 {
+      padding-top: $spacing-03;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    h3 {
+      padding-top: $spacing-03;
+      font-size: 0.8125rem;
+    }
+
+    h4 {
+      padding-top: $spacing-03;
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+
+    .sectionContent {
+      padding-top: $spacing-03;
+    }
+  }
+
+  // outline: bullets first, sections indented with a guide line
+  &--outline {
+    .viewerHeadingButton {
+      display: none;
+    }
+
+    .sectionContent {
+      margin-top: $spacing-04;
+      margin-left: 11px;
+      padding-left: $spacing-05;
+      border-left: 1px solid var(--orui-gray-500);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      padding-left: $spacing-02;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .sec {
+      padding-top: $spacing-02;
+    }
+  }
+}

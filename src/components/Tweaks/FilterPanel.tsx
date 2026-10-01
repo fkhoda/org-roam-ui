@@ -1,13 +1,12 @@
-import { Box, Flex, IconButton, NativeSelect, Stack, Text } from '@chakra-ui/react'
-import { useContext } from 'react'
-import { LuTrash2 } from 'react-icons/lu'
+import { TrashCan } from '@carbon/icons-react'
+import { IconButton, Select, SelectItem } from '@carbon/react'
+import { useContext, useId } from 'react'
 import type { Filter, Local, TagColors } from '../../config'
 import { VariablesContext } from '../../context'
 import type { Setter } from '../../hooks/usePersistentState'
 import { ColorPicker } from '../ui/ColorPicker'
 import { SelectMenu } from '../ui/SelectMenu'
-import { Switch } from '../ui/Switch'
-import { ListSetting, SettingsStack, SliderSetting } from './controls'
+import { ListSetting, SettingsStack, SliderSetting, ToggleSetting } from './controls'
 import { SettingsAccordion } from './SettingsAccordion'
 
 export interface FilterPanelProps {
@@ -20,72 +19,59 @@ export interface FilterPanelProps {
   tags: string[]
 }
 
-export function FilterPanel({
-  filter,
-  setFilter,
-  local,
-  setLocal,
-  tagColors,
-  setTagColors,
-  tags,
-}: FilterPanelProps) {
+type Hideable = 'orphans' | 'dailies' | 'noter' | 'filelessCites' | 'bad'
+
+export function FilterPanel(props: FilterPanelProps) {
+  const { filter, setFilter, local, setLocal, tagColors, setTagColors, tags } = props
   const { roamDir, subDirs } = useContext(VariablesContext)
   const set = <K extends keyof Filter>(key: K, value: Filter[K]) =>
     setFilter((current) => ({ ...current, [key]: value }))
-  const hide = (key: 'orphans' | 'dailies' | 'noter' | 'filelessCites' | 'bad', label: string) => (
-    <Flex justifyContent="space-between">
-      <Text>{label}</Text>
-      <Switch
-        label={label}
-        checked={filter[key]}
-        onChange={(checked) => {
-          // non-existent nodes are colored white when shown
-          if (key === 'bad') setTagColors((current) => ({ ...current, bad: 'white' }))
-          set(key, checked)
-        }}
-      />
-    </Flex>
+  const hide = (key: Hideable, label: string) => (
+    <ToggleSetting
+      label={label}
+      value={filter[key]}
+      onChange={(checked) => {
+        // non-existent nodes are colored white when shown
+        if (key === 'bad') setTagColors((current) => ({ ...current, bad: 'white' }))
+        set(key, checked)
+      }}
+    />
   )
   const withoutRoamDir = (dir: string) => (roamDir ? dir.replace(roamDir, '') : dir)
 
   return (
-    <Box>
-      <SettingsStack pl={7}>
-        <SelectMenu
-          label="Link children to"
-          value={filter.parent}
-          onChange={(value) => set('parent', value)}
-          options={[
-            { value: '', label: 'Nothing' },
-            { value: 'parent', label: 'Parent file node' },
-            { value: 'heading', label: 'Next highest heading node' },
-          ]}
-          display={{ parent: 'File', heading: 'Heading' }[filter.parent] ?? 'Nothing'}
-        />
-        <Text fontSize="xs" color="fg.subtle">
-          Hide
-        </Text>
-        {hide('orphans', 'Orphans')}
-        {hide('dailies', 'Dailies')}
-        {hide('noter', 'Org-noter pages')}
-        {hide('filelessCites', 'Citations without note files')}
-        {hide('bad', 'Non-existent nodes')}
-        <SliderSetting
-          label="Number of neighbors in local graph"
-          value={local.neighbors}
-          onChange={(neighbors) => setLocal((current) => ({ ...current, neighbors }))}
-          min={1}
-          max={5}
-          step={1}
-        />
-      </SettingsStack>
+    <SettingsStack>
+      <SelectMenu
+        label="Link children to"
+        value={filter.parent}
+        onChange={(value) => set('parent', value)}
+        options={[
+          { value: '', label: 'Nothing' },
+          { value: 'parent', label: 'Parent file node' },
+          { value: 'heading', label: 'Next highest heading node' },
+        ]}
+        display={{ parent: 'File', heading: 'Heading' }[filter.parent] ?? 'Nothing'}
+      />
+      <p className="setting-heading">Hide</p>
+      {hide('orphans', 'Orphans')}
+      {hide('dailies', 'Dailies')}
+      {hide('noter', 'Org-noter pages')}
+      {hide('filelessCites', 'Citations without note files')}
+      {hide('bad', 'Non-existent nodes')}
+      <SliderSetting
+        label="Neighbors in local graph"
+        value={local.neighbors}
+        onChange={(neighbors) => setLocal((current) => ({ ...current, neighbors }))}
+        min={1}
+        max={5}
+        step={1}
+      />
       <SettingsAccordion
-        pl={3}
         sections={[
           {
             title: 'Directory filters',
             content: (
-              <>
+              <SettingsStack>
                 <ListSetting
                   label="Directory blocklist"
                   options={subDirs}
@@ -100,13 +86,13 @@ export function FilterPanel({
                   onChange={(dirs) => set('dirsAllowlist', dirs)}
                   format={withoutRoamDir}
                 />
-              </>
+              </SettingsStack>
             ),
           },
           {
             title: 'Tag filters',
             content: (
-              <>
+              <SettingsStack>
                 <ListSetting
                   label="Tag blocklist"
                   options={tags}
@@ -119,7 +105,7 @@ export function FilterPanel({
                   value={filter.tagsWhitelist}
                   onChange={(list) => set('tagsWhitelist', list)}
                 />
-              </>
+              </SettingsStack>
             ),
           },
           {
@@ -130,7 +116,7 @@ export function FilterPanel({
           },
         ]}
       />
-    </Box>
+    </SettingsStack>
   )
 }
 
@@ -145,51 +131,47 @@ function TagColorPanel({
 }) {
   const uncolored = tags.filter((tag) => !tagColors[tag])
   return (
-    <Stack gap={2} color="fg.muted">
-      <NativeSelect.Root size="xs" disabled={!uncolored.length}>
-        <NativeSelect.Field
-          aria-label="Add tag to color"
-          value=""
-          onChange={(event) => {
-            const tag = event.target.value
-            if (tag) setTagColors((current) => ({ ...current, [tag]: 'gray.600' }))
-          }}
-        >
-          <option value="">
-            {uncolored.length ? 'Add tag to color…' : 'All tags have colors'}
-          </option>
-          {uncolored.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </NativeSelect.Field>
-        <NativeSelect.Indicator />
-      </NativeSelect.Root>
+    <SettingsStack>
+      <Select
+        id={useId()}
+        size="sm"
+        labelText="Add tag to color"
+        value=""
+        disabled={!uncolored.length}
+        onChange={(event) => {
+          const tag = event.target.value
+          if (tag) setTagColors((current) => ({ ...current, [tag]: 'gray.600' }))
+        }}
+      >
+        <SelectItem value="" text={uncolored.length ? 'Pick a tag…' : 'All tags have colors'} />
+        {uncolored.map((tag) => (
+          <SelectItem key={tag} value={tag} text={tag} />
+        ))}
+      </Select>
       {Object.keys(tagColors).map((tag) => (
-        <Flex key={tag} alignItems="center" gap={1} pl={2}>
-          <Text flex={1} truncate>
-            {tag}
-          </Text>
-          <ColorPicker
-            value={tagColors[tag]}
-            allowEmpty={false}
-            onChange={(color) => setTagColors((current) => ({ ...current, [tag]: color }))}
-          />
-          <IconButton
-            aria-label={`Remove color of ${tag}`}
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              setTagColors((current) =>
-                Object.fromEntries(Object.entries(current).filter(([t]) => t !== tag)),
-              )
-            }
-          >
-            <LuTrash2 />
-          </IconButton>
-        </Flex>
+        <div key={tag} className="setting-row">
+          <span>{tag}</span>
+          <span className="setting-row__label">
+            <ColorPicker
+              value={tagColors[tag]}
+              allowEmpty={false}
+              onChange={(color) => setTagColors((current) => ({ ...current, [tag]: color }))}
+            />
+            <IconButton
+              label={`Remove color of ${tag}`}
+              kind="ghost"
+              size="sm"
+              onClick={() =>
+                setTagColors((current) =>
+                  Object.fromEntries(Object.entries(current).filter(([t]) => t !== tag)),
+                )
+              }
+            >
+              <TrashCan />
+            </IconButton>
+          </span>
+        </div>
       ))}
-    </Stack>
+    </SettingsStack>
   )
 }

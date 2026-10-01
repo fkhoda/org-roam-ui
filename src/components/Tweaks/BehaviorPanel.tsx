@@ -27,7 +27,7 @@ export function BehaviorPanel({ behavior, setBehavior, mouse, setMouse }: Behavi
     setBehavior((current) => ({ ...current, [key]: value }))
 
   return (
-    <SettingsStack pl={7}>
+    <SettingsStack>
       <SelectMenu
         label="Preview node"
         value={mouse.preview}

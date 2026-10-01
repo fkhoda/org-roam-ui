@@ -1,7 +1,16 @@
-import { Box, Button, Dialog, Flex, Menu, Portal, Stack, Text } from '@chakra-ui/react'
-import { useState, type RefObject } from 'react'
-import { BiNetworkChart } from 'react-icons/bi'
-import { LuEye, LuEyeOff, LuMinus, LuPencil, LuPlus, LuSquarePlus, LuTrash2 } from 'react-icons/lu'
+import {
+  Add,
+  AddAlt,
+  ChartNetwork,
+  ColorPalette,
+  Edit,
+  Subtract,
+  TrashCan,
+  View,
+  ViewOff,
+} from '@carbon/icons-react'
+import { Menu, MenuItem, MenuItemDivider, MenuItemGroup, Modal } from '@carbon/react'
+import type { RefObject } from 'react'
 import type { OrgRoamNode, Scope } from '../api'
 import { colorList, type Filter, type TagColors } from '../config'
 import { useEditorName } from '../context'
@@ -15,6 +24,8 @@ export interface ContextMenuProps {
   target: ContextMenuTarget
   at: { x: number; y: number }
   onClose: () => void
+  /** ask to delete a note */
+  onDelete: (node: OrgRoamNode) => void
   scope: Scope
   onLocal: (node: OrgRoamNode, command: LocalCommand) => void
   setPreviewNode: (node: OrgRoamNode) => void
@@ -29,68 +40,53 @@ export interface ContextMenuProps {
 /** The right-click menu of a node or a tag. */
 export function ContextMenu(props: ContextMenuProps) {
   const { target, at, onClose } = props
-  const [confirmDelete, setConfirmDelete] = useState(false)
   return (
-    <>
-      <Menu.Root
-        open={!confirmDelete}
-        positioning={{ getAnchorRect: () => ({ ...at, width: 0, height: 0 }) }}
-        onOpenChange={({ open }) => !open && !confirmDelete && onClose()}
-      >
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content fontSize="xs" minW="56">
-              {typeof target === 'string' ? (
-                <TagItems tag={target} {...props} />
-              ) : (
-                <NodeItems node={target} onDelete={() => setConfirmDelete(true)} {...props} />
-              )}
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
-      {typeof target !== 'string' && (
-        <Dialog.Root
-          open={confirmDelete}
-          onOpenChange={({ open }) => !open && onClose()}
-          placement="center"
-          role="alertdialog"
-        >
-          <Portal>
-            <Dialog.Backdrop />
-            <Dialog.Positioner>
-              <Dialog.Content>
-                <Dialog.Header>
-                  <Dialog.Title>Delete note?</Dialog.Title>
-                </Dialog.Header>
-                <Dialog.Body>
-                  <Stack gap={4}>
-                    <Text>This permanently deletes the note's file:</Text>
-                    <Text fontWeight="bold">{target.title}</Text>
-                  </Stack>
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.ActionTrigger asChild>
-                    <Button variant="outline" colorPalette="gray">
-                      Cancel
-                    </Button>
-                  </Dialog.ActionTrigger>
-                  <Button
-                    colorPalette="red"
-                    onClick={() => {
-                      deleteNode(props.socket.current, target)
-                      onClose()
-                    }}
-                  >
-                    Delete note
-                  </Button>
-                </Dialog.Footer>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog.Root>
+    <Menu
+      open
+      x={at.x}
+      y={at.y}
+      size="sm"
+      label={typeof target === 'string' ? `Tag ${target}` : target.title}
+      onClose={onClose}
+    >
+      {typeof target === 'string' ? (
+        <TagItems tag={target} {...props} />
+      ) : (
+        <NodeItems node={target} {...props} />
       )}
-    </>
+    </Menu>
+  )
+}
+
+/** Confirm deleting a note's file. Lives outside the menu, which closes as an item is picked. */
+export function DeleteNoteDialog({
+  node,
+  onClose,
+  socket,
+}: {
+  node: OrgRoamNode | null
+  onClose: () => void
+  socket: RefObject<EditorSocket | null>
+}) {
+  return (
+    <Modal
+      open={!!node}
+      danger
+      size="xs"
+      modalHeading="Delete note?"
+      primaryButtonText="Delete note"
+      secondaryButtonText="Cancel"
+      onRequestClose={onClose}
+      onRequestSubmit={() => {
+        if (node) deleteNode(socket.current, node)
+        onClose()
+      }}
+    >
+      <p>This permanently deletes the note's file:</p>
+      <p>
+        <strong>{node?.title}</strong>
+      </p>
+    </Modal>
   )
 }
 
@@ -101,57 +97,81 @@ function NodeItems({
   onLocal,
   setPreviewNode,
   socket,
-}: ContextMenuProps & { node: OrgRoamNode; onDelete: () => void }) {
+}: ContextMenuProps & { node: OrgRoamNode }) {
   const editor = useEditorName()
   const isLocal = scope.nodeIds.length > 0
   return (
     <>
-      <Menu.ItemGroup>
-        <Menu.ItemGroupLabel truncate maxW="xs">
-          {node.title}
-        </Menu.ItemGroupLabel>
-      </Menu.ItemGroup>
-      <Menu.Separator />
-      {isLocal && (
-        <>
-          <Menu.Item value="add" onSelect={() => onLocal(node, 'add')}>
-            <LuSquarePlus /> Expand local graph at node
-          </Menu.Item>
-          <Menu.Item value="replace" onSelect={() => onLocal(node, 'replace')}>
-            <BiNetworkChart /> Open local graph for this node
-          </Menu.Item>
-          <Menu.Item value="remove" onSelect={() => onLocal(node, 'remove')}>
-            <LuMinus /> Exclude node from local graph
-          </Menu.Item>
-        </>
-      )}
-      {node.properties?.FILELESS ? (
-        <Menu.Item value="create" onSelect={() => createNode(socket.current, node)}>
-          <LuPlus /> Create node
-        </Menu.Item>
-      ) : (
-        <Menu.Item value="open" onSelect={() => openNode(socket.current, node)}>
-          <LuPencil /> Open in {editor}
-        </Menu.Item>
-      )}
-      {!isLocal && (
-        <Menu.Item value="local" onSelect={() => onLocal(node, 'replace')}>
-          <BiNetworkChart /> Open local graph
-        </Menu.Item>
-      )}
-      <Menu.Item value="preview" onSelect={() => setPreviewNode(node)}>
-        <LuEye /> Preview
-      </Menu.Item>
+      <MenuItemGroup label={node.title}>
+        {isLocal && (
+          <>
+            <MenuItem
+              label="Expand local graph at node"
+              renderIcon={AddAlt}
+              onClick={() => onLocal(node, 'add')}
+            />
+            <MenuItem
+              label="Open local graph for this node"
+              renderIcon={ChartNetwork}
+              onClick={() => onLocal(node, 'replace')}
+            />
+            <MenuItem
+              label="Exclude node from local graph"
+              renderIcon={Subtract}
+              onClick={() => onLocal(node, 'remove')}
+            />
+          </>
+        )}
+        {node.properties?.FILELESS ? (
+          <MenuItem
+            label="Create node"
+            renderIcon={Add}
+            onClick={() => createNode(socket.current, node)}
+          />
+        ) : (
+          <MenuItem
+            label={`Open in ${editor}`}
+            renderIcon={Edit}
+            onClick={() => openNode(socket.current, node)}
+          />
+        )}
+        {!isLocal && (
+          <MenuItem
+            label="Open local graph"
+            renderIcon={ChartNetwork}
+            onClick={() => onLocal(node, 'replace')}
+          />
+        )}
+        <MenuItem label="Preview" renderIcon={View} onClick={() => setPreviewNode(node)} />
+      </MenuItemGroup>
       {node.level === 0 && (
-        <Menu.Item value="delete" color="red.500" closeOnSelect={false} onSelect={onDelete}>
-          <LuTrash2 /> Permanently delete note
-        </Menu.Item>
+        <>
+          <MenuItemDivider />
+          <MenuItem
+            label="Permanently delete note"
+            kind="danger"
+            renderIcon={TrashCan}
+            onClick={() => onDelete(node)}
+          />
+        </>
       )}
     </>
   )
 }
 
-function TagItems({ tag, filter, setFilter, setTagColors }: ContextMenuProps & { tag: string }) {
+/** A menu icon showing a color. */
+const swatchIcon = (color: string) => {
+  const Icon = () => <Swatch color={color} size={12} />
+  return Icon
+}
+
+function TagItems({
+  tag,
+  filter,
+  setFilter,
+  tagColors,
+  setTagColors,
+}: ContextMenuProps & { tag: string }) {
   const blocked = filter.tagsBlacklist.includes(tag)
   const allowed = filter.tagsWhitelist.includes(tag)
   const toggle = (list: 'tagsBlacklist' | 'tagsWhitelist', on: boolean) =>
@@ -165,36 +185,32 @@ function TagItems({ tag, filter, setFilter, setTagColors }: ContextMenuProps & {
       return color ? { ...rest, [tag]: color } : rest
     })
   return (
-    <>
-      <Menu.ItemGroup>
-        <Menu.ItemGroupLabel>Color of {tag}</Menu.ItemGroupLabel>
-        <Flex flexWrap="wrap" gap={1} px={2} pb={2} maxW="56">
-          {['', ...colorList].map((color) => (
-            <Box
-              key={color || 'none'}
-              as="button"
-              aria-label={color || 'No color'}
-              onClick={() => setColor(color)}
-              cursor="pointer"
-            >
-              <Swatch color={color} height={4} width={4} />
-            </Box>
-          ))}
-        </Flex>
-      </Menu.ItemGroup>
-      <Menu.Separator />
+    <MenuItemGroup label={tag}>
+      <MenuItem label="Color" renderIcon={ColorPalette}>
+        {['', ...colorList].map((color) => (
+          <MenuItem
+            key={color || 'none'}
+            label={color || 'No color'}
+            renderIcon={swatchIcon(color)}
+            shortcut={tagColors[tag] === color ? '✓' : undefined}
+            onClick={() => setColor(color)}
+          />
+        ))}
+      </MenuItem>
       {!allowed && (
-        <Menu.Item value="block" onSelect={() => toggle('tagsBlacklist', !blocked)}>
-          {blocked ? <LuMinus /> : <LuEyeOff />}{' '}
-          {blocked ? 'Remove from blocklist' : 'Add to blocklist'}
-        </Menu.Item>
+        <MenuItem
+          label={blocked ? 'Remove from blocklist' : 'Add to blocklist'}
+          renderIcon={blocked ? Subtract : ViewOff}
+          onClick={() => toggle('tagsBlacklist', !blocked)}
+        />
       )}
       {!blocked && (
-        <Menu.Item value="allow" onSelect={() => toggle('tagsWhitelist', !allowed)}>
-          {allowed ? <LuMinus /> : <LuEye />}{' '}
-          {allowed ? 'Remove from allowlist' : 'Add to allowlist'}
-        </Menu.Item>
+        <MenuItem
+          label={allowed ? 'Remove from allowlist' : 'Add to allowlist'}
+          renderIcon={allowed ? Subtract : View}
+          onClick={() => toggle('tagsWhitelist', !allowed)}
+        />
       )}
-    </>
+    </MenuItemGroup>
   )
 }

@@ -1,25 +1,27 @@
-import { Box, Flex, IconButton } from '@chakra-ui/react'
-import { Resizable } from 're-resizable'
-import { useState } from 'react'
 import {
-  BiAlignJustify,
-  BiAlignLeft,
-  BiAlignMiddle,
-  BiAlignRight,
-  BiDotsVerticalRounded,
-} from 'react-icons/bi'
-import { IoIosListBox, IoMdListBox } from 'react-icons/io'
-import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
-import { MdOutlineCompress, MdOutlineExpand } from 'react-icons/md'
+  ChevronLeft,
+  ChevronRight,
+  CollapseAll,
+  Document,
+  ExpandAll,
+  ListBulleted,
+  OverflowMenuVertical,
+  TextAlignCenter,
+  TextAlignJustify,
+  TextAlignLeft,
+  TextAlignRight,
+} from '@carbon/icons-react'
+import { IconButton } from '@carbon/react'
+import { Resizable } from 're-resizable'
+import { useState, type ComponentType, type MouseEvent } from 'react'
 import type { OrgRoamNode } from '../../api'
 import type { Filter, TagColors } from '../../config'
 import { usePersistentState, type Setter } from '../../hooks/usePersistentState'
-import { Tooltip } from '../ui/Tooltip'
 import { Note } from './Note'
 import { PreviewContext, type PreviewState } from './PreviewContext'
 
 const alignments = ['justify', 'start', 'end', 'center']
-const alignmentIcons = [<BiAlignJustify />, <BiAlignLeft />, <BiAlignRight />, <BiAlignMiddle />]
+const alignmentIcons = [TextAlignJustify, TextAlignLeft, TextAlignRight, TextAlignCenter]
 
 export interface SidebarProps {
   isOpen: boolean
@@ -33,14 +35,8 @@ export interface SidebarProps {
 }
 
 /** The note preview on the right, resizable from its left edge. */
-export function Sidebar({
-  isOpen,
-  previewNode,
-  history,
-  preview,
-  windowWidth,
-  ...note
-}: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
+  const { isOpen, previewNode, history, preview, windowWidth, ...note } = props
   const [width, setWidth] = usePersistentState('sidebarWidth', 400)
   const [justification, setJustification] = usePersistentState('justification', 1)
   const [outline, setOutline] = usePersistentState('outline', false)
@@ -50,15 +46,13 @@ export function Sidebar({
 
   const button = (
     label: string,
-    icon: React.ReactNode,
-    onClick: (event: React.MouseEvent) => void,
+    Icon: ComponentType,
+    onClick: (event: MouseEvent) => void,
     disabled = false,
   ) => (
-    <Tooltip content={label}>
-      <IconButton aria-label={label} variant="subtle" onClick={onClick} disabled={disabled}>
-        {icon}
-      </IconButton>
-    </Tooltip>
+    <IconButton label={label} kind="ghost" size="sm" onClick={onClick} disabled={disabled}>
+      <Icon />
+    </IconButton>
   )
 
   return (
@@ -70,37 +64,39 @@ export function Sidebar({
       maxWidth={Math.max(windowWidth - 200, 220)}
     >
       <PreviewContext.Provider value={{ ...preview, outline }}>
-        <Flex flexDir="column" h="100vh" pl={2} color="black" bg="alt.100">
-          <Flex px={2} pt={1} pb={3} alignItems="center">
-            {button('Go back', <LuChevronLeft />, history.back, !history.canBack)}
-            {button('Go forward', <LuChevronRight />, history.forward, !history.canForward)}
-            <Box w={4} />
+        <aside className="sidebar" aria-label="Note preview">
+          <div className="sidebar__toolbar">
+            {button('Go back', ChevronLeft, history.back, !history.canBack)}
+            {button('Go forward', ChevronRight, history.forward, !history.canForward)}
+            <span style={{ width: 16 }} />
             {button('Justify content', alignmentIcons[justification], () =>
               setJustification((j) => (j + 1) % alignments.length),
             )}
-            {button('Toggle outline view', outline ? <IoIosListBox /> : <IoMdListBox />, () =>
-              setOutline((on) => !on),
+            {button(
+              outline ? 'Show as document' : 'Show as outline',
+              outline ? Document : ListBulleted,
+              () => setOutline((on) => !on),
             )}
             {button(
               collapse ? 'Expand headings' : 'Collapse headings',
-              collapse ? <MdOutlineExpand /> : <MdOutlineCompress />,
+              collapse ? ExpandAll : CollapseAll,
               () => setCollapse((on) => !on),
             )}
-            <Box ml="auto">
-              {button('Options', <BiDotsVerticalRounded />, (event) =>
+            <span style={{ marginLeft: 'auto' }}>
+              {button('Options', OverflowMenuVertical, (event) =>
                 preview.openContextMenu(previewNode, event),
               )}
-            </Box>
-          </Flex>
-          <Box flex={1} overflowY="auto" className="thin-scrollbar">
+            </span>
+          </div>
+          <div className="sidebar__content thin-scrollbar">
             <Note
               node={previewNode}
               textAlign={alignments[justification]}
               collapse={collapse}
               {...note}
             />
-          </Box>
-        </Flex>
+          </div>
+        </aside>
       </PreviewContext.Provider>
     </Resizable>
   )

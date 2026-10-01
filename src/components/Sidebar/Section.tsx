@@ -1,7 +1,5 @@
-import { Box, Flex, IconButton } from '@chakra-ui/react'
+import { ChevronDown, ChevronUp, CircleFilled, RadioButton } from '@carbon/icons-react'
 import { Children, useContext, useState, type ReactNode } from 'react'
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu'
-import { VscCircle, VscCircleFilled } from 'react-icons/vsc'
 import { NoteContext } from '../../context'
 
 /**
@@ -19,29 +17,29 @@ export function Section({ children, className }: { children: ReactNode; classNam
   const [heading, ...content] = Children.toArray(children)
   const label = open ? 'Collapse heading' : 'Expand heading'
   return (
-    <Box className={`sec ${className ?? ''}`}>
-      <Flex className="headingFlex" alignItems="baseline">
-        <IconButton
-          className="viewerHeadingButton"
+    <section className={`sec ${className ?? ''}`}>
+      <div className="headingFlex">
+        <button
+          type="button"
+          className="heading-toggle viewerHeadingButton"
           aria-label={label}
-          size="2xs"
-          variant="subtle"
+          aria-expanded={open}
           onClick={toggle}
         >
-          {open ? <LuChevronUp /> : <LuChevronDown />}
-        </IconButton>
-        <IconButton
-          className="outlineHeadingButton"
+          {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+        <button
+          type="button"
+          className="heading-toggle outlineHeadingButton"
           aria-label={label}
-          size="2xs"
-          variant="subtle"
+          aria-expanded={open}
           onClick={toggle}
         >
-          {open ? <VscCircle /> : <VscCircleFilled />}
-        </IconButton>
+          {open ? <RadioButton size={12} /> : <CircleFilled size={12} />}
+        </button>
         {heading}
-      </Flex>
-      {open && <Box className="sectionContent">{content}</Box>}
-    </Box>
+      </div>
+      {open && <div className="sectionContent">{content}</div>}
+    </section>
   )
 }

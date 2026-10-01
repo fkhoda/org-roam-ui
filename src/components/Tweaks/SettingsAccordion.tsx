@@ -1,34 +1,23 @@
-import { Accordion, type AccordionRootProps } from '@chakra-ui/react'
+import { Accordion, AccordionItem } from '@carbon/react'
 import type { ReactNode } from 'react'
 
-export interface SettingsAccordionProps extends Omit<AccordionRootProps, 'children'> {
+export interface SettingsAccordionProps {
   sections: { title: ReactNode; content: ReactNode }[]
-  /** heading-sized titles, for the top level */
+  /** indexes of the sections open at first */
+  defaultOpen?: number[]
+  /** the top level: larger titles */
   big?: boolean
 }
 
 /** Collapsible groups of settings; any number can be open. */
-export function SettingsAccordion({ sections, big, ...rest }: SettingsAccordionProps) {
+export function SettingsAccordion({ sections, defaultOpen = [], big }: SettingsAccordionProps) {
   return (
-    <Accordion.Root multiple collapsible lazyMount variant="plain" {...rest}>
-      {sections.map(({ title }, index) => (
-        <Accordion.Item key={index} value={String(index)}>
-          <Accordion.ItemTrigger
-            py={2}
-            fontWeight={big ? 'semibold' : 'normal'}
-            fontSize={big ? 'md' : 'sm'}
-            cursor="pointer"
-          >
-            <Accordion.ItemIndicator />
-            {title}
-          </Accordion.ItemTrigger>
-          <Accordion.ItemContent>
-            <Accordion.ItemBody pt={1} pr={2}>
-              {sections[index].content}
-            </Accordion.ItemBody>
-          </Accordion.ItemContent>
-        </Accordion.Item>
+    <Accordion size={big ? 'lg' : 'sm'} align="start">
+      {sections.map(({ title, content }, index) => (
+        <AccordionItem key={index} title={title} open={defaultOpen.includes(index) || undefined}>
+          {content}
+        </AccordionItem>
       ))}
-    </Accordion.Root>
+    </Accordion>
   )
 }

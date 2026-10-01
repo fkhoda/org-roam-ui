@@ -1,13 +1,11 @@
-import { Box, Flex, IconButton } from '@chakra-ui/react'
+import { ChartNetwork, SidePanelClose, SidePanelOpen } from '@carbon/icons-react'
+import { IconButton } from '@carbon/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BiNetworkChart } from 'react-icons/bi'
-import { BsReverseLayoutSidebarInsetReverse } from 'react-icons/bs'
 import type { EditorVariables, OrgRoamGraphResponse, OrgRoamNode, Scope } from './api'
-import { ContextMenu } from './components/ContextMenu'
+import { ContextMenu, DeleteNoteDialog } from './components/ContextMenu'
 import type { ContextMenuTarget } from './components/Sidebar/PreviewContext'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Tweaks } from './components/Tweaks/Tweaks'
-import { Tooltip } from './components/ui/Tooltip'
 import {
   initialBehavior,
   initialColoring,
@@ -69,6 +67,7 @@ export default function App() {
     target: ContextMenuTarget
     at: { x: number; y: number }
   } | null>(null)
+  const [toDelete, setToDelete] = useState<OrgRoamNode | null>(null)
   const [width, height] = useWindowSize()
 
   const graphRef = useRef<GraphMethods | undefined>(undefined)
@@ -196,7 +195,7 @@ export default function App() {
 
   return (
     <VariablesContext.Provider value={variables}>
-      <Box display="flex" alignItems="flex-start" height="100vh" overflow="clip">
+      <div className="app">
         <Tweaks
           {...{
             physics,
@@ -220,7 +219,7 @@ export default function App() {
           }}
           tags={graph.tags}
         />
-        <Box position="absolute">
+        <div className="graph-layer">
           {graphData && (
             <Graph
               graphRef={graphRef}
@@ -249,39 +248,28 @@ export default function App() {
               onBackgroundClick={() => setMenu(null)}
             />
           )}
-        </Box>
-        <Flex
-          position="relative"
-          zIndex={4}
-          width="100%"
-          h={10}
-          alignItems="center"
-          justifyContent="flex-end"
-        >
+        </div>
+        <header className="header-bar">
           {scope.nodeIds.length > 0 && (
-            <Tooltip content="Return to the main graph">
-              <IconButton
-                m={1}
-                aria-label="Exit local graph"
-                variant="subtle"
-                onClick={() => setScope((s) => ({ ...s, nodeIds: [] }))}
-              >
-                <BiNetworkChart />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip content={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}>
             <IconButton
-              m={1}
-              aria-label="Toggle sidebar"
-              variant="subtle"
-              onClick={() => setSidebarOpen((open) => !open)}
+              label="Return to the main graph"
+              kind="ghost"
+              align="bottom"
+              onClick={() => setScope((s) => ({ ...s, nodeIds: [] }))}
             >
-              <BsReverseLayoutSidebarInsetReverse />
+              <ChartNetwork />
             </IconButton>
-          </Tooltip>
-        </Flex>
-        <Box position="relative" zIndex={4}>
+          )}
+          <IconButton
+            label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            kind="ghost"
+            align="bottom-end"
+            onClick={() => setSidebarOpen((open) => !open)}
+          >
+            {sidebarOpen ? <SidePanelClose /> : <SidePanelOpen />}
+          </IconButton>
+        </header>
+        <div style={{ position: 'relative', zIndex: 4 }}>
           <Sidebar
             isOpen={sidebarOpen}
             previewNode={preview.value}
@@ -302,12 +290,13 @@ export default function App() {
               useInheritance: variables.useInheritance ?? false,
             }}
           />
-        </Box>
+        </div>
         {menu && (
           <ContextMenu
             target={menu.target}
             at={menu.at}
             onClose={() => setMenu(null)}
+            onDelete={setToDelete}
             scope={scope}
             onLocal={handleLocal}
             setPreviewNode={setPreviewNode}
@@ -315,7 +304,8 @@ export default function App() {
             {...{ filter, setFilter, tagColors, setTagColors }}
           />
         )}
-      </Box>
+        <DeleteNoteDialog node={toDelete} onClose={() => setToDelete(null)} socket={socketRef} />
+      </div>
     </VariablesContext.Provider>
   )
 }

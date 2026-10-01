@@ -7,6 +7,14 @@ const editor = 'http://localhost:35901'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // uniorg-attach builds attachment paths with Node's path module
+    alias: { path: 'path-browserify' },
+  },
+  css: {
+    // Carbon's SCSS still uses syntax Sass deprecates; that's for Carbon to fix
+    preprocessorOptions: { scss: { quietDeps: true } },
+  },
   build: {
     outDir: 'out',
     emptyOutDir: true,
