@@ -46,6 +46,13 @@ export default function Graph3D({
         sprite.fontFace = 'IBM Plex Sans'
         sprite.padding = 2
         sprite.textHeight = 8
+        // below the node, like the 2D labels: radius = cbrt(size) * relative size
+        const size = typeof props.nodeVal === 'function' ? props.nodeVal(node) : 1
+        const radius = Math.cbrt(size) * (props.nodeRelSize ?? 4)
+        sprite.position.y = -(radius + sprite.textHeight)
+        // drawn after every node and link, so nothing hides part of a label
+        sprite.material.depthTest = false
+        sprite.renderOrder = 999
         return sprite
       }}
     />
