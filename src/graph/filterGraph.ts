@@ -3,6 +3,8 @@ import type { LinksByNodeId, OrgRoamNode, Scope } from '../api'
 import type { Filter } from '../config'
 import { findNthNeighbors, indexLinks, linkEnds, type GraphData, type GraphNode } from './links'
 
+const jitter = () => (Math.random() - 0.5) * 10
+
 const structural = (type: string) => type === 'parent' || type === 'heading'
 
 /** Whether the filter hides a node by itself (before looking at its links). */
@@ -109,7 +111,20 @@ export function scopeGraph(
         return !ends.some((end) => excluded.has(end)) && ends.some((end) => roots.has(end))
       })
     })
-    .map((node) => ({ ...node, x: 0, y: 0, vx: 0, vy: 0 }))
+    // start near the center, in a small random cloud: nodes stacked on one point or line (3D kept
+    // their old z) feel no sideways force and never spread out
+    .map((node) => ({
+      ...node,
+      x: jitter(),
+      y: jitter(),
+      z: jitter(),
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      fx: undefined,
+      fy: undefined,
+      fz: undefined,
+    }))
 
   const nodes = [...kept, ...added]
   const ids = new Set(nodes.map((node) => node.id as string))

@@ -82,7 +82,7 @@ export function Tweaks(props: TweaksProps) {
   return (
     <aside className="tweaks" aria-label="Settings">
       <div className="tweaks__header">
-        <Button kind="ghost" size="sm" onClick={() => props.setThreeDim((on) => !on)}>
+        <Button kind="ghost" size="md" onClick={() => props.setThreeDim((on) => !on)}>
           {props.threeDim ? '3D' : '2D'}
         </Button>
         <span>
@@ -90,7 +90,7 @@ export function Tweaks(props: TweaksProps) {
             autoAlign
             label="Reset settings to defaults"
             kind="ghost"
-            size="sm"
+            size="md"
             align="bottom"
             onClick={reset}
           >
@@ -100,7 +100,7 @@ export function Tweaks(props: TweaksProps) {
             autoAlign
             label="Close settings"
             kind="ghost"
-            size="sm"
+            size="md"
             onClick={() => setShowTweaks(false)}
           >
             <Close />

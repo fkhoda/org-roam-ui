@@ -43,9 +43,11 @@ export function useLayoutWorker(options: Options) {
       const { positions, dims } = message
       nodes.current.forEach((node, i) => {
         if (node.id === dragged.current) return
-        node.fx = positions[i * dims]
-        node.fy = positions[i * dims + 1]
-        if (dims === 3) node.fz = positions[i * dims + 2]
+        // x too, not only the pin: a fit right after this (on "settled") reads x before
+        // force-graph's next tick would copy fx over
+        node.x = node.fx = positions[i * dims]
+        node.y = node.fy = positions[i * dims + 1]
+        if (dims === 3) node.z = node.fz = positions[i * dims + 2]
       })
       // force-graph only redraws while its engine runs: wake it to show the new positions
       if (engineStopped.current) {

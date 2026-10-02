@@ -54,6 +54,64 @@ export interface GraphProps {
 }
 
 const DOUBLE_CLICK_MS = 200
+const FIT_MS = 400
+// fitting a local graph of one or two nodes would zoom in all the way
+const MAX_FIT_ZOOM = 3 // 2D scale
+const MIN_FIT_DISTANCE = 250 // 3D camera distance
+
+interface Point {
+  x: number
+  y: number
+  z: number
+}
+/** The parts of the 3D graph's methods a fit uses. */
+interface Graph3DMethods {
+  camera: () => { position: Point; fov: number }
+  controls: () => { target: Point }
+  cameraPosition: (position: Point, lookAt: Point, ms: number) => void
+}
+
+/** Fit the graph in view, without zooming in further than a few nodes need. */
+function fitView(fg: GraphMethods | undefined, threeDim: boolean, nodes: GraphNode[]) {
+  if (!fg) return
+  if (!threeDim) {
+    fg.zoomToFit(FIT_MS, 80)
+    setTimeout(() => {
+      if (fg.zoom() > MAX_FIT_ZOOM) fg.zoom(MAX_FIT_ZOOM, FIT_MS)
+    }, FIT_MS + 50)
+    return
+  }
+  // 3D: one move to the box's center, from the current viewing angle, far enough to see it all
+  const fg3 = fg as unknown as Graph3DMethods
+  // from the nodes' positions: force-graph's getGraphBbox reads its 3D objects, which lag the
+  // positions while its engine sleeps
+  if (!nodes.length) return
+  const axes = (['x', 'y', 'z'] as const).map((axis) => {
+    const values = nodes.map((node) => node[axis] ?? 0)
+    return [Math.min(...values), Math.max(...values)]
+  })
+  const [x, y, z] = axes.map(([low, high]) => (low + high) / 2)
+  const center = { x, y, z }
+  const radius = Math.hypot(...axes.map(([low, high]) => high - low)) / 2 + 40
+  const { position, fov } = fg3.camera()
+  const distance = Math.max(MIN_FIT_DISTANCE, radius / Math.sin((fov * Math.PI) / 360))
+  const target = fg3.controls().target
+  const direction = {
+    x: position.x - target.x,
+    y: position.y - target.y,
+    z: position.z - target.z,
+  }
+  const length = Math.hypot(direction.x, direction.y, direction.z) || 1
+  fg3.cameraPosition(
+    {
+      x: center.x + (direction.x / length) * distance,
+      y: center.y + (direction.y / length) * distance,
+      z: center.z + (direction.z / length) * distance,
+    },
+    center,
+    FIT_MS,
+  )
+}
 
 export function Graph(props: GraphProps) {
   const { graphRef, graphData, physics, filter, visuals, mouse, scope, threeDim } = props
@@ -114,7 +172,7 @@ export function Graph(props: GraphProps) {
     onSettled: () => {
       if (!fitPending.current) return
       fitPending.current = false
-      graphRef.current?.zoomToFit(400, 80)
+      fitView(graphRef.current, threeDim, (isLocal ? scoped.data : filtered).nodes)
     },
   })
 

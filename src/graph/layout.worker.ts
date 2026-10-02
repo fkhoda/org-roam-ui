@@ -73,9 +73,24 @@ function run() {
   clearTimeout(timer)
   const loop = () => {
     if (!simulation) return
+    const before = nodes.map((node) => [node.x ?? 0, node.y ?? 0, node.z ?? 0])
     simulation.tick()
     post()
-    if (!settled && simulation.alpha() < 0.05) {
+    // settled: cooled down and no node moving much (the centering force isn't damped by the
+    // cooling, so a graph can keep sliding toward the center after alpha is low)
+    const moved = nodes.reduce(
+      (most, node, i) =>
+        Math.max(
+          most,
+          Math.hypot(
+            (node.x ?? 0) - before[i][0],
+            (node.y ?? 0) - before[i][1],
+            (node.z ?? 0) - before[i][2],
+          ),
+        ),
+      0,
+    )
+    if (!settled && simulation.alpha() < 0.05 && moved < 0.5) {
       settled = true
       postMessage({ type: 'settled', version })
     }
@@ -119,6 +134,8 @@ onmessage = ({ data }: MessageEvent<LayoutRequest>) => {
       return
     }
     case 'config':
+      // a new graph brings its config along: the same config right after it changes nothing
+      if (JSON.stringify(data.config) === JSON.stringify(config)) return
       config = data.config
       applyConfig()
       return reheat()
