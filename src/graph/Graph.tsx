@@ -1,4 +1,3 @@
-import { forceCenter, forceCollide, forceX, forceY, forceZ } from 'd3-force-3d'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import ForceGraph2D, { type ForceGraphMethods, type ForceGraphProps } from 'react-force-graph-2d'
 import type { LinksByNodeId, OrgRoamNode, Scope } from '../api'
@@ -19,6 +18,7 @@ import { linkColor, makeColorMixer, nodeColor } from './colors'
 import { drawLabel, nodeSize } from './drawLabels'
 import { filterGraph, scopeGraph } from './filterGraph'
 import { isLinkRelatedToNode, linkEnds, type GraphData, type GraphNode } from './links'
+import { useLayoutWorker } from './useLayoutWorker'
 
 const Graph3D = lazy(() => import('./Graph3D'))
 
@@ -93,29 +93,30 @@ export function Graph(props: GraphProps) {
   // the 3D graph loads lazily: count its mounts so the effects below run once it's there
   const [graphMounts, setGraphMounts] = useState(0)
 
-  // forces: gravity pulls nodes to the center, collision keeps them apart
+  // the layout runs in a worker; the view fits to a new layout once it mostly settles, after the
+  // first load, a change of local graph or a switch to 3D (not after drags or settings changes)
+  const fitPending = useRef(true)
+  const [fitTriggers, setFitTriggers] = useState({ roots: scope.nodeIds, threeDim })
+  if (fitTriggers.roots !== scope.nodeIds || fitTriggers.threeDim !== threeDim) {
+    setFitTriggers({ roots: scope.nodeIds, threeDim })
+  }
   useEffect(() => {
-    const fg = graphRef.current
-    if (!fg) return
-    const gravity = physics.gravityOn && !(isLocal && !physics.gravityLocal)
-    fg.d3Force('x', gravity ? forceX().strength(physics.gravity) : null)
-    fg.d3Force('y', gravity ? forceY().strength(physics.gravity) : null)
-    if (threeDim) fg.d3Force('z', gravity ? forceZ().strength(physics.gravity) : null)
-    fg.d3Force(
-      'center',
-      physics.centering ? forceCenter().strength(physics.centeringStrength) : null,
-    )
-    const link = fg.d3Force('link')
-    if (physics.linkStrength) link?.strength(physics.linkStrength)
-    if (physics.linkIts) link?.iterations(physics.linkIts)
-    if (physics.charge) fg.d3Force('charge')?.strength(physics.charge)
-    fg.d3Force(
-      'collide',
-      physics.collision ? forceCollide().radius(physics.collisionStrength) : null,
-    )
-    // changing forces alone doesn't restart a settled simulation
-    fg.d3ReheatSimulation()
-  }, [graphRef, physics, threeDim, isLocal, scope.nodeIds.length, graphMounts])
+    fitPending.current = true
+  }, [fitTriggers])
+  const layout = useLayoutWorker({
+    graphRef,
+    data: isLocal ? scoped.data : filtered,
+    physics,
+    isLocal,
+    threeDim,
+    warmupTicks: scope.nodeIds.length === 1 ? 100 : scope.nodeIds.length > 1 ? 20 : 0,
+    mounts: graphMounts,
+    onSettled: () => {
+      if (!fitPending.current) return
+      fitPending.current = false
+      graphRef.current?.zoomToFit(400, 80)
+    },
+  })
 
   // highlighting: the hovered node and its neighbors, fading in and out
   const [hoverNode, setHoverNode] = useState<GraphNode | null>(null)
@@ -210,7 +211,6 @@ export function Graph(props: GraphProps) {
     width: props.width,
     height: props.height,
     backgroundColor: resolveColor(visuals.backgroundColor, palette),
-    warmupTicks: scope.nodeIds.length === 1 ? 100 : scope.nodeIds.length > 1 ? 20 : 0,
     onZoom: ({ k }) => (scale.current = k),
     nodeColor: (node) =>
       nodeColor({
@@ -285,6 +285,7 @@ export function Graph(props: GraphProps) {
     d3AlphaDecay: physics.alphaDecay,
     d3AlphaMin: physics.alphaMin,
     d3VelocityDecay: physics.velocityDecay,
+    onEngineStop: () => layout.engineStopped(),
     onNodeClick: (node, event) => {
       // a second click within DOUBLE_CLICK_MS is a double click, else wait to see
       const isDouble = event.timeStamp - lastClick.current < DOUBLE_CLICK_MS
@@ -305,10 +306,12 @@ export function Graph(props: GraphProps) {
       hover(node)
     },
     onNodeDrag: (node) => {
+      layout.drag(node)
       hover(node)
       setDragging(true)
     },
-    onNodeDragEnd: () => {
+    onNodeDragEnd: (node) => {
+      layout.release(node)
       hover(null)
       setDragging(false)
     },

@@ -10,11 +10,16 @@ declare module 'jlouvain.js' {
 }
 
 declare module 'd3-force-3d' {
-  // the forces org-roam-ui uses, typed as loosely as force-graph accepts them
-  type Force = ((alpha: number) => void) & Record<string, (...args: never[]) => unknown>
-  export function forceX(): Force & { strength(s: number): Force }
-  export function forceY(): Force & { strength(s: number): Force }
-  export function forceZ(): Force & { strength(s: number): Force }
-  export function forceCenter(): Force & { strength(s: number): Force }
-  export function forceCollide(): Force & { radius(r: number): Force }
+  // d3-force with a third dimension; typed as loosely as the layout worker uses it
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  type Chainable = ((alpha: number) => void) & { [method: string]: (...args: any[]) => any }
+  export function forceSimulation(nodes?: object[], numDimensions?: number): Chainable
+  export function forceLink(links?: object[]): Chainable
+  export function forceManyBody(): Chainable
+  export function forceCenter(): Chainable
+  export function forceCollide(): Chainable
+  export function forceX(): Chainable
+  export function forceY(): Chainable
+  export function forceZ(): Chainable
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }

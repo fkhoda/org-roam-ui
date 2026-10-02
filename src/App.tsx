@@ -116,11 +116,8 @@ export default function App() {
       behavior.localSame === 'add' &&
       scope.nodeIds.includes(id) &&
       scope.nodeIds.some((scoped) => near.has(scoped))
+    // the graph fits the new local graph once its layout settles
     setScope((s) => ({ ...s, nodeIds: extend ? [...s.nodeIds, id] : [id] }))
-    setTimeout(() => {
-      fg.centerAt(0, 0, 10)
-      fg.zoomToFit(1, padding)
-    }, 50)
   }
 
   // the socket outlives renders: it calls the latest handler through a ref
@@ -174,16 +171,9 @@ export default function App() {
     return () => socket.close()
   }, [])
 
-  // fit the view when entering, leaving or replacing the local graph
+  // fit the view when leaving the local graph (entering it fits once its layout settles)
   useEffect(() => {
-    const fg = graphRef.current
-    if (!fg || scope.nodeIds.length > 1) return
-    if (!scope.nodeIds.length && physics.gravityOn) {
-      fg.zoomToFit()
-      return
-    }
-    const timer = setTimeout(() => fg.zoomToFit(5, 200), 50)
-    return () => clearTimeout(timer)
+    if (!scope.nodeIds.length && physics.gravityOn) graphRef.current?.zoomToFit(400, 80)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the local graph's roots change
   }, [scope.nodeIds])
 

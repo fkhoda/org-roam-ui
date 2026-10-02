@@ -82,6 +82,8 @@ export default function Graph3D({
     <ForceGraph3D
       ref={graphRef as never}
       {...props}
+      // orbit around the graph's center, without the trackball's roll
+      controlType="orbit"
       nodeThreeObjectExtend
       nodeOpacity={visuals.nodeOpacity}
       nodeResolution={visuals.nodeResolution}
