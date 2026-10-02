@@ -130,6 +130,13 @@ export default function Graph3D({
     [labels, labelTextColor, labelBackgroundColor, nodeRelSize],
   )
 
+  // forget the labels of nodes that left the graph
+  const graphNodes = props.graphData?.nodes
+  useEffect(() => {
+    const ids = new Set((graphNodes ?? []).map((node) => node.id as string))
+    for (const id of sprites.current.keys()) if (!ids.has(id)) sprites.current.delete(id)
+  }, [graphNodes])
+
   // 3 is "always, even in 3D"; 1 and 2 show labels on highlight only
   useEffect(
     () =>

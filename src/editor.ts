@@ -18,7 +18,15 @@ export type EditorSocket = ReconnectingWebSocket
 
 export function connectEditor(onMessage: (message: { type: string; data: unknown }) => void) {
   const socket = new ReconnectingWebSocket(wsUrl)
-  socket.addEventListener('message', (event) => onMessage(JSON.parse(event.data as string)))
+  socket.addEventListener('message', (event) => {
+    let message
+    try {
+      message = JSON.parse(event.data as string)
+    } catch (error) {
+      return console.error('bad message from the editor', error)
+    }
+    onMessage(message)
+  })
   return socket
 }
 

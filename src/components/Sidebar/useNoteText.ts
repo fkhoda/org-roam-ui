@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import { GraphRevisionContext } from '../../context'
 import { noteUrl } from '../../editor'
 
 /**
@@ -6,17 +7,22 @@ import { noteUrl } from '../../editor'
  * (link previews fetch on first hover).
  */
 export function useNoteText(id: string | undefined, enabled = true) {
-  const [text, setText] = useState<{ id: string; text: string } | null>(null)
+  // refetch after the editor saves a note (a graph update), keeping the old text meanwhile
+  const revision = useContext(GraphRevisionContext)
+  const [text, setText] = useState<{ id: string; text: string; revision: number } | null>(null)
+  const current = text?.id === id && text?.revision === revision
   useEffect(() => {
-    if (!id || !enabled || text?.id === id) return
+    if (!id || !enabled || current) return
     const controller = new AbortController()
     fetch(noteUrl(id), { signal: controller.signal })
       .then((res) => (res.ok ? res.text() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((body) => setText({ id, text: body || '(empty node)' }))
+      .then((body) => setText({ id, text: body || '(empty node)', revision }))
       .catch((error: Error) => {
-        if (error.name !== 'AbortError') setText({ id, text: '(could not load the note)' })
+        if (error.name !== 'AbortError') {
+          setText({ id, text: '(could not load the note)', revision })
+        }
       })
     return () => controller.abort()
-  }, [id, enabled, text?.id])
+  }, [id, enabled, current, revision])
   return text && text.id === id ? text.text : null
 }

@@ -16,7 +16,7 @@ import {
   initialVisuals,
   type TagColors,
 } from './config'
-import { VariablesContext } from './context'
+import { GraphRevisionContext, VariablesContext } from './context'
 import { connectEditor, openNode, type EditorSocket } from './editor'
 import { mergeGraph, processGraph, type ProcessedGraph } from './graph/buildGraph'
 import { Graph, type GraphMethods, type LocalCommand } from './graph/Graph'
@@ -25,6 +25,7 @@ import { useHistory } from './hooks/useHistory'
 import { usePersistentState } from './hooks/usePersistentState'
 import { useWindowSize } from './hooks/useWindowSize'
 import { useTheme } from './theme/ThemeProvider'
+import { themes } from './theme/themes'
 
 const emptyGraph: ProcessedGraph = {
   nodes: [],
@@ -56,6 +57,7 @@ export default function App() {
   const { setTheme } = useTheme()
 
   const [graph, setGraph] = useState<ProcessedGraph>(emptyGraph)
+  const [revision, setRevision] = useState(0)
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [variables, setVariables] = useState<EditorVariables>({ subDirs: [] })
   const [emacsNodeId, setEmacsNodeId] = useState<string | null>(null)
@@ -128,13 +130,18 @@ export default function App() {
         case 'graphdata': {
           const next = processGraph(data as OrgRoamGraphResponse)
           setGraph(next)
+          setRevision((r) => r + 1)
           setGraphData((current) => mergeGraph(current ?? { nodes: [], links: [] }, next))
           return
         }
         case 'variables':
           return setVariables(data as EditorVariables)
         case 'theme':
-          return setTheme(['custom', data as Record<string, string>])
+          // a partial theme keeps the default's other colors
+          return setTheme([
+            'custom',
+            { ...themes['one-vibrant'], ...(data as Record<string, string>) },
+          ])
         case 'command': {
           const command = data as EditorCommand
           switch (command.commandName) {
@@ -185,119 +192,121 @@ export default function App() {
 
   return (
     <VariablesContext.Provider value={variables}>
-      <div className="app">
-        <Tweaks
-          {...{
-            physics,
-            setPhysics,
-            threeDim,
-            setThreeDim,
-            filter,
-            setFilter,
-            visuals,
-            setVisuals,
-            mouse,
-            setMouse,
-            behavior,
-            setBehavior,
-            tagColors,
-            setTagColors,
-            coloring,
-            setColoring,
-            local,
-            setLocal,
-          }}
-          tags={graph.tags}
-        />
-        <div className="graph-layer">
-          {graphData && (
-            <Graph
-              graphRef={graphRef}
-              graphData={graphData}
-              linksByNodeId={graph.linksByNodeId}
-              {...{
-                physics,
-                filter,
-                visuals,
-                mouse,
-                local,
-                coloring,
-                tagColors,
-                threeDim,
-                scope,
-                emacsNodeId,
-              }}
-              sidebarHighlightedNode={sidebarHighlightedNode}
-              dailyDir={variables.dailyDir}
-              width={width}
-              height={height}
-              onPreview={setPreviewNode}
-              onLocal={(node) => handleLocal(node, behavior.localSame)}
-              onOpen={(node) => openNode(socketRef.current, node)}
-              onContextMenu={openContextMenu}
-              onBackgroundClick={() => setMenu(null)}
-            />
-          )}
-        </div>
-        <header className="header-bar">
-          {scope.nodeIds.length > 0 && (
+      <GraphRevisionContext.Provider value={revision}>
+        <div className="app">
+          <Tweaks
+            {...{
+              physics,
+              setPhysics,
+              threeDim,
+              setThreeDim,
+              filter,
+              setFilter,
+              visuals,
+              setVisuals,
+              mouse,
+              setMouse,
+              behavior,
+              setBehavior,
+              tagColors,
+              setTagColors,
+              coloring,
+              setColoring,
+              local,
+              setLocal,
+            }}
+            tags={graph.tags}
+          />
+          <div className="graph-layer">
+            {graphData && (
+              <Graph
+                graphRef={graphRef}
+                graphData={graphData}
+                linksByNodeId={graph.linksByNodeId}
+                {...{
+                  physics,
+                  filter,
+                  visuals,
+                  mouse,
+                  local,
+                  coloring,
+                  tagColors,
+                  threeDim,
+                  scope,
+                  emacsNodeId,
+                }}
+                sidebarHighlightedNode={sidebarHighlightedNode}
+                dailyDir={variables.dailyDir}
+                width={width}
+                height={height}
+                onPreview={setPreviewNode}
+                onLocal={(node) => handleLocal(node, behavior.localSame)}
+                onOpen={(node) => openNode(socketRef.current, node)}
+                onContextMenu={openContextMenu}
+                onBackgroundClick={() => setMenu(null)}
+              />
+            )}
+          </div>
+          <header className="header-bar">
+            {scope.nodeIds.length > 0 && (
+              <IconButton
+                autoAlign
+                label="Return to the main graph"
+                kind="ghost"
+                align="bottom"
+                onClick={() => setScope((s) => ({ ...s, nodeIds: [] }))}
+              >
+                <ChartNetwork />
+              </IconButton>
+            )}
             <IconButton
               autoAlign
-              label="Return to the main graph"
+              label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               kind="ghost"
-              align="bottom"
-              onClick={() => setScope((s) => ({ ...s, nodeIds: [] }))}
+              align="bottom-end"
+              onClick={() => setSidebarOpen((open) => !open)}
             >
-              <ChartNetwork />
+              {sidebarOpen ? <SidePanelClose /> : <SidePanelOpen />}
             </IconButton>
+          </header>
+          <div style={{ position: 'relative', zIndex: 4 }}>
+            <Sidebar
+              isOpen={sidebarOpen}
+              previewNode={preview.value}
+              history={preview}
+              windowWidth={width}
+              filter={filter}
+              setFilter={setFilter}
+              tagColors={tagColors}
+              preview={{
+                nodeById: graph.nodeById,
+                linksByNodeId: graph.linksByNodeId,
+                nodeByCite: graph.nodeByCite,
+                setPreviewNode,
+                setSidebarHighlightedNode,
+                openContextMenu,
+                macros: variables.katexMacros ?? {},
+                attachDir: variables.attachDir ?? '',
+                useInheritance: variables.useInheritance ?? false,
+              }}
+            />
+          </div>
+          {menu && (
+            <ContextMenu
+              target={menu.target}
+              at={menu.at}
+              onClose={() => setMenu(null)}
+              onDelete={setToDelete}
+              scope={scope}
+              onLocal={handleLocal}
+              setPreviewNode={setPreviewNode}
+              socket={socketRef}
+              {...{ filter, setFilter, tagColors, setTagColors }}
+            />
           )}
-          <IconButton
-            autoAlign
-            label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            kind="ghost"
-            align="bottom-end"
-            onClick={() => setSidebarOpen((open) => !open)}
-          >
-            {sidebarOpen ? <SidePanelClose /> : <SidePanelOpen />}
-          </IconButton>
-        </header>
-        <div style={{ position: 'relative', zIndex: 4 }}>
-          <Sidebar
-            isOpen={sidebarOpen}
-            previewNode={preview.value}
-            history={preview}
-            windowWidth={width}
-            filter={filter}
-            setFilter={setFilter}
-            tagColors={tagColors}
-            preview={{
-              nodeById: graph.nodeById,
-              linksByNodeId: graph.linksByNodeId,
-              nodeByCite: graph.nodeByCite,
-              setPreviewNode,
-              setSidebarHighlightedNode,
-              openContextMenu,
-              macros: variables.katexMacros ?? {},
-              attachDir: variables.attachDir ?? '',
-              useInheritance: variables.useInheritance ?? false,
-            }}
-          />
+          <DeleteNoteDialog node={toDelete} onClose={() => setToDelete(null)} socket={socketRef} />
         </div>
-        {menu && (
-          <ContextMenu
-            target={menu.target}
-            at={menu.at}
-            onClose={() => setMenu(null)}
-            onDelete={setToDelete}
-            scope={scope}
-            onLocal={handleLocal}
-            setPreviewNode={setPreviewNode}
-            socket={socketRef}
-            {...{ filter, setFilter, tagColors, setTagColors }}
-          />
-        )}
-        <DeleteNoteDialog node={toDelete} onClose={() => setToDelete(null)} socket={socketRef} />
-      </div>
+      </GraphRevisionContext.Provider>
     </VariablesContext.Provider>
   )
 }

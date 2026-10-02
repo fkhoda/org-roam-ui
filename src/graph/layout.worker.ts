@@ -38,6 +38,8 @@ let timer: ReturnType<typeof setTimeout> | undefined
 let dragging = false
 // whether this graph's layout has come mostly to rest yet (told once: the view fits to it)
 let settled = false
+// each node's position before the current tick, reused across ticks
+let before = new Float64Array(0)
 
 function applyConfig() {
   if (!simulation || !config) return
@@ -53,10 +55,11 @@ function applyConfig() {
     .force('center', p.centering ? forceCenter().strength(p.centeringStrength) : null)
     .force('collide', p.collision ? forceCollide().radius(p.collisionStrength) : null)
   const link = simulation.force('link')
-  if (p.linkStrength) link.strength(p.linkStrength)
-  if (p.linkIts) link.iterations(p.linkIts)
+  // 0 is a setting too
+  if (typeof p.linkStrength === 'number') link.strength(p.linkStrength)
+  if (typeof p.linkIts === 'number') link.iterations(p.linkIts)
   const charge = simulation.force('charge')
-  if (p.charge) charge.strength(p.charge)
+  if (typeof p.charge === 'number') charge.strength(p.charge)
 }
 
 function post() {
@@ -73,7 +76,12 @@ function run() {
   clearTimeout(timer)
   const loop = () => {
     if (!simulation) return
-    const before = nodes.map((node) => [node.x ?? 0, node.y ?? 0, node.z ?? 0])
+    if (before.length !== nodes.length * 3) before = new Float64Array(nodes.length * 3)
+    nodes.forEach((node, i) => {
+      before[i * 3] = node.x ?? 0
+      before[i * 3 + 1] = node.y ?? 0
+      before[i * 3 + 2] = node.z ?? 0
+    })
     simulation.tick()
     post()
     // settled: cooled down and no node moving much (the centering force isn't damped by the
@@ -83,9 +91,9 @@ function run() {
         Math.max(
           most,
           Math.hypot(
-            (node.x ?? 0) - before[i][0],
-            (node.y ?? 0) - before[i][1],
-            (node.z ?? 0) - before[i][2],
+            (node.x ?? 0) - before[i * 3],
+            (node.y ?? 0) - before[i * 3 + 1],
+            (node.z ?? 0) - before[i * 3 + 2],
           ),
         ),
       0,
@@ -96,7 +104,14 @@ function run() {
     }
     const cooled =
       simulation.alpha() < simulation.alphaMin() || performance.now() - started > COOLDOWN_MS
-    if (cooled && !dragging) return postMessage({ type: 'end', version })
+    if (cooled && !dragging) {
+      // a layout that never came to rest still gets its fit, now rather than after a later reheat
+      if (!settled) {
+        settled = true
+        postMessage({ type: 'settled', version })
+      }
+      return postMessage({ type: 'end', version })
+    }
     timer = setTimeout(loop, TICK_MS)
   }
   loop()

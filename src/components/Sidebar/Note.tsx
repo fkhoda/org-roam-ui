@@ -9,6 +9,7 @@ import type { Setter } from '../../hooks/usePersistentState'
 import { carbonTagType } from '../../theme/carbon'
 import { PreviewLink } from './Link'
 import { usePreview } from './PreviewContext'
+import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { useNoteText } from './useNoteText'
 
 // the org pipeline (unified, uniorg, KaTeX) loads with the first preview
@@ -37,9 +38,14 @@ export function Note({ node, textAlign, collapse, filter, setFilter, tagColors }
       >
         {text !== null && (
           <NoteContext.Provider value={{ outline, collapse }}>
-            <Suspense>
-              <OrgContent text={text} node={node} />
-            </Suspense>
+            <ErrorBoundary
+              resetKey={text}
+              fallback={<p className="loading-text">Could not show this note.</p>}
+            >
+              <Suspense>
+                <OrgContent text={text} node={node} />
+              </Suspense>
+            </ErrorBoundary>
           </NoteContext.Provider>
         )}
       </div>

@@ -1,6 +1,6 @@
 import 'katex/dist/katex.css'
 import type { Components } from 'hast-util-to-jsx-runtime'
-import { useMemo, type ReactNode } from 'react'
+import { Children, useMemo } from 'react'
 import * as runtime from 'react/jsx-runtime'
 import rehypeKatex from 'rehype-katex'
 import rehypeReact from 'rehype-react'
@@ -84,11 +84,18 @@ export default function OrgContent({ text, node }: OrgContentProps) {
         // a heading node's own section: show its contents without repeating its heading
         const level = /section-level-(\d+)/.exec(className ?? '')?.[1]
         if (level && Number(level) === node.level) {
-          return <div>{(children as ReactNode[]).slice(1)}</div>
+          // a lone child comes as itself, not in an array
+          return <div>{Children.toArray(children).slice(1)}</div>
         }
         return <Section className={className}>{children}</Section>
       },
       p: ({ children }) => <p lang="en">{children}</p>,
+      // wide tables scroll sideways instead of being cut off by the narrow sidebar
+      table: ({ children }) => (
+        <div className="table-scroll">
+          <table>{children}</table>
+        </div>
+      ),
     }
     return base
       .use(rehypeKatex, {

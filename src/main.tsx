@@ -35,4 +35,5 @@ createRoot(document.getElementById('root')!).render(
 navigator.serviceWorker?.getRegistrations().then((registrations) => {
   for (const registration of registrations) registration.unregister()
 })
-caches?.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
+// `caches` only exists in secure contexts: not over plain HTTP from another machine
+globalThis.caches?.keys().then((keys) => keys.forEach((key) => caches.delete(key)))

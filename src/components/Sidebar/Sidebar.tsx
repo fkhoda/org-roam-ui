@@ -38,7 +38,9 @@ export interface SidebarProps {
 export function Sidebar(props: SidebarProps) {
   const { isOpen, previewNode, history, preview, windowWidth, ...note } = props
   const [width, setWidth] = usePersistentState('sidebarWidth', 400)
-  const [justification, setJustification] = usePersistentState('justification', 1)
+  const [storedJustification, setJustification] = usePersistentState('justification', 1)
+  // a stored value from another version may be out of range
+  const justification = alignments[storedJustification] ? storedJustification : 1
   const [outline, setOutline] = usePersistentState('outline', false)
   const [collapse, setCollapse] = useState(false)
 
@@ -98,6 +100,7 @@ export function Sidebar(props: SidebarProps) {
           </div>
           <div className="sidebar__content thin-scrollbar">
             <Note
+              key={previewNode.id}
               node={previewNode}
               textAlign={alignments[justification]}
               collapse={collapse}

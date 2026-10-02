@@ -2,6 +2,7 @@ import { Launch } from '@carbon/icons-react'
 import { Popover, PopoverContent } from '@carbon/react'
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NoteContext } from '../../context'
+import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { usePreview } from './PreviewContext'
 import { useNoteText } from './useNoteText'
 
@@ -26,6 +27,8 @@ export function PreviewLink({ href, children, isWiki, noUnderline }: PreviewLink
   const { nodeByCite } = usePreview()
   const [type, path] = splitHref(href)
 
+  // in-page anchors: KaTeX's \eqref and \ref
+  if (href.startsWith('#')) return <a href={href}>{children}</a>
   if (!type) return <span className="dead-link">{children}</span>
   if (/^https?$/.test(type)) {
     return (
@@ -98,7 +101,13 @@ function NodeLink({
           close()
           if (node) setPreviewNode(node)
         }}
-        onKeyDown={(event) => event.key === 'Enter' && node && setPreviewNode(node)}
+        onFocus={hoverProps.onMouseEnter}
+        onBlur={hoverProps.onMouseLeave}
+        aria-expanded={open}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') close()
+          if (event.key === 'Enter' && node) setPreviewNode(node)
+        }}
         onContextMenu={(event) => {
           event.preventDefault()
           close()
@@ -113,9 +122,14 @@ function NodeLink({
         >
           {node && text !== null ? (
             <NoteContext.Provider value={{ outline, collapse: false }}>
-              <Suspense>
-                <OrgContent text={text} node={node} />
-              </Suspense>
+              <ErrorBoundary
+                resetKey={text}
+                fallback={<p className="loading-text">Could not show this note.</p>}
+              >
+                <Suspense>
+                  <OrgContent text={text} node={node} />
+                </Suspense>
+              </ErrorBoundary>
             </NoteContext.Provider>
           ) : (
             <p className="loading-text">Loading…</p>

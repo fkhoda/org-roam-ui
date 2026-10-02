@@ -72,11 +72,15 @@ interface Graph3DMethods {
 }
 
 /** Fit the graph in view, without zooming in further than a few nodes need. */
+// the pending zoom limit of the last 2D fit: a newer fit or zoom replaces it
+let clampTimer: ReturnType<typeof setTimeout> | undefined
+
 function fitView(fg: GraphMethods | undefined, threeDim: boolean, nodes: GraphNode[]) {
+  clearTimeout(clampTimer)
   if (!fg) return
   if (!threeDim) {
     fg.zoomToFit(FIT_MS, 80)
-    setTimeout(() => {
+    clampTimer = setTimeout(() => {
       if (fg.zoom() > MAX_FIT_ZOOM) fg.zoom(MAX_FIT_ZOOM, FIT_MS)
     }, FIT_MS + 50)
     return
@@ -170,7 +174,8 @@ export function Graph(props: GraphProps) {
     warmupTicks: scope.nodeIds.length === 1 ? 100 : scope.nodeIds.length > 1 ? 20 : 0,
     mounts: graphMounts,
     onSettled: () => {
-      if (!fitPending.current) return
+      // no graph yet (the 3D one loads lazily): keep the fit for its own layout
+      if (!fitPending.current || !graphRef.current) return
       fitPending.current = false
       fitView(graphRef.current, threeDim, (isLocal ? scoped.data : filtered).nodes)
     },
@@ -191,13 +196,15 @@ export function Graph(props: GraphProps) {
     emacs: props.emacsNodeId,
     sidebar: props.sidebarHighlightedNode,
   })
-  if (followed.emacs !== props.emacsNodeId) {
-    setFollowed({ ...followed, emacs: props.emacsNodeId })
-    if (props.emacsNodeId) hover(graphData.nodes.find((n) => n.id === props.emacsNodeId) ?? null)
-  }
-  if (followed.sidebar !== props.sidebarHighlightedNode) {
-    setFollowed({ ...followed, sidebar: props.sidebarHighlightedNode })
-    hover(props.sidebarHighlightedNode?.id ? props.sidebarHighlightedNode : null)
+  if (followed.emacs !== props.emacsNodeId || followed.sidebar !== props.sidebarHighlightedNode) {
+    // one update for both: two from the same `followed` would undo each other
+    setFollowed({ emacs: props.emacsNodeId, sidebar: props.sidebarHighlightedNode })
+    if (followed.emacs !== props.emacsNodeId && props.emacsNodeId) {
+      hover(graphData.nodes.find((n) => n.id === props.emacsNodeId) ?? null)
+    }
+    if (followed.sidebar !== props.sidebarHighlightedNode) {
+      hover(props.sidebarHighlightedNode?.id ? props.sidebarHighlightedNode : null)
+    }
   }
 
   const [animatedOpacity, setOpacity] = useState(1)
@@ -224,7 +231,10 @@ export function Graph(props: GraphProps) {
   })
   useEffect(() => {
     if (!animate) return
-    if (hoverNode) return fadeIn()
+    if (hoverNode) {
+      cancelFadeOut()
+      return fadeIn()
+    }
     // don't start the fade out at 1 when moving quickly off a node that was fading in
     cancelFadeIn()
     fadeOutFrom.current = latestOpacity.current

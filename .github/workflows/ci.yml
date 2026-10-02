@@ -1,65 +1,25 @@
----
-# File : ci.yml
+name: ci
 
-name: 'ci'
 on:
   push:
-    branches:
-      - '**'
-      - '!main'
   pull_request:
   workflow_dispatch:
-defaults:
-  run:
-    shell: 'bash'
+
 env:
   # Carbon's packages report usage to IBM on install unless told not to
   IBM_TELEMETRY_DISABLED: 'true'
 
 jobs:
-  changes:
-    runs-on: 'ubuntu-latest'
-    outputs:
-      ts: ${{ steps.filter.outputs.ts }}
+  check:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: '[check if build necessary]'
-        uses: dorny/paths-filter@v2
-        id: filter
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          filters: |
-            ts:
-              - '**.ts'
-              - '**.tsx'
-              - '**.json'
-  lint-test-build:
-    name: '[ci|lint-test-build]'
-    runs-on: 'ubuntu-latest'
-    needs: changes
-    if: ${{ needs.changes.outputs.ts == 'true' }}
-    steps:
-      - name: '[checkout] ${{ github.repository }} project'
-        uses: 'actions/checkout@v2'
-        with:
-          repository: '${{ github.repository }}'
-      - name: '[setup node]'
-        uses: 'actions/setup-node@v2'
-        with:
-          node-version: '16'
-      - name: '[lint]'
-        run: |
-          echo TBA some linting
-      - name: '[test]'
-        run: |
-          echo TBA some testing
-      - name: '[build]'
-        run: |
-          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
-          git config --global url."https://".insteadOf git://
-          git config --global url."https://".insteadOf ssh://
-          yarn install
-          yarn run build
-          yarn run export
-
-# End of ci.yml
-...
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # typecheck, lint, formatting and build
+      - run: npm run check
+      - name: out/ matches the sources
+        run: git diff --exit-code -- out
